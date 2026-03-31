@@ -1,0 +1,8 @@
+# Git ignore — keep secrets out of version control
+.env
+.env.local
+node_modules/
+.expo/
+dist/
+*.orig.*
+web-build/
