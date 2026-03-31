@@ -13,6 +13,7 @@ import WatchlistScreen   from '../screens/WatchlistScreen';
 import ReadTheLine       from '../screens/ReadTheLine';
 import SignalFeed        from '../screens/SignalFeed';
 import PriceAlerts       from '../screens/PriceAlerts';
+import ProfileScreen     from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -92,7 +93,7 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
-            const icons = { BTC: '₿', Signal: '📡', Alerts: '🎯', Watchlist: '📈', Learn: '🏂' };
+            const icons = { BTC: '₿', Signal: '📡', Alerts: '🎯', Watchlist: '📈', Learn: '🏂', Profile: '👤' };
             return <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>;
           },
           tabBarActiveTintColor:   colors.accent,
@@ -118,6 +119,9 @@ export default function AppNavigator() {
         <Tab.Screen name="Alerts"    component={PriceAlerts}     options={{ title: 'ALERTS' }} />
         <Tab.Screen name="Watchlist" component={WatchlistScreen} options={{ title: 'WATCHLIST' }} />
         <Tab.Screen name="Learn"     component={ReadTheLine}     options={{ title: 'LEARN' }} />
+        <Tab.Screen name="Profile"   options={{ title: 'PROFILE' }}>
+          {() => <ProfileScreen profile={profile} onSignOut={() => setProfile(null)} />}
+        </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
   );
