@@ -13,7 +13,7 @@ import WatchlistScreen   from '../screens/WatchlistScreen';
 import ReadTheLine       from '../screens/ReadTheLine';
 import SignalFeed        from '../screens/SignalFeed';
 import PriceAlerts       from '../screens/PriceAlerts';
-import ProfileScreen     from '../screens/ProfileScreen';
+import ProfileModal      from '../components/ProfileModal';
 
 const Tab = createBottomTabNavigator();
 
@@ -93,8 +93,8 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
-            const icons    = { BTC: '₿', Signal: '📡', Alerts: '🎯', Learn: '🏂', Profile: '👤' };
-            const iconColors = { BTC: colors.gold, Signal: null, Alerts: null, Learn: null, Profile: null };
+            const icons    = { BTC: '₿', Signal: '📡', Alerts: '🎯', Learn: '🏂' };
+            const iconColors = { BTC: colors.gold, Signal: null, Alerts: null, Learn: null };
             const iconColor  = focused ? (iconColors[route.name] ?? colors.accent) : (iconColors[route.name] ?? colors.textMuted);
             return <Text style={{ fontSize: 20, color: iconColor }}>{icons[route.name]}</Text>;
           },
@@ -110,9 +110,7 @@ export default function AppNavigator() {
           headerTintColor:  colors.textPrimary,
           headerTitleStyle: { fontWeight: '800', letterSpacing: 1 },
           headerRight: () => (
-            <Text style={{ color: colors.textMuted, marginRight: 16, fontSize: 13 }}>
-              {profile?.name ?? ''} ⚡{profile?.xp ?? 0}xp
-            </Text>
+            <ProfileModal profile={profile} onSignOut={() => { setProfile(null); setSession(null); }} />
           ),
         })}
       >
@@ -120,9 +118,6 @@ export default function AppNavigator() {
         <Tab.Screen name="Signal"    component={SignalFeed}      options={{ title: 'SIGNAL' }} />
         <Tab.Screen name="Alerts"    component={PriceAlerts}     options={{ title: 'ALERTS' }} />
         <Tab.Screen name="Learn"     component={ReadTheLine}     options={{ title: 'LEARN' }} />
-        <Tab.Screen name="Profile"   options={{ title: 'PROFILE' }}>
-          {() => <ProfileScreen profile={profile} onSignOut={() => setProfile(null)} />}
-        </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
   );
