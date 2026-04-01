@@ -93,8 +93,10 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
-            const icons = { BTC: '₿', Signal: '📡', Alerts: '🎯', Learn: '🏂', Profile: '👤' };
-            return <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>;
+            const icons    = { BTC: '₿', Signal: '📡', Alerts: '🎯', Learn: '🏂', Profile: '👤' };
+            const iconColors = { BTC: colors.gold, Signal: null, Alerts: null, Learn: null, Profile: null };
+            const iconColor  = focused ? (iconColors[route.name] ?? colors.accent) : (iconColors[route.name] ?? colors.textMuted);
+            return <Text style={{ fontSize: 20, color: iconColor }}>{icons[route.name]}</Text>;
           },
           tabBarActiveTintColor:   colors.accent,
           tabBarInactiveTintColor: colors.textMuted,
