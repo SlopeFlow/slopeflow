@@ -93,7 +93,7 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
-            const icons = { BTC: '₿', Signal: '📡', Alerts: '🎯', Watchlist: '📈', Learn: '🏂', Profile: '👤' };
+            const icons = { BTC: '₿', Signal: '📡', Alerts: '🎯', Learn: '🏂', Profile: '👤' };
             return <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>;
           },
           tabBarActiveTintColor:   colors.accent,
@@ -117,7 +117,6 @@ export default function AppNavigator() {
         <Tab.Screen name="BTC"       component={BTCDashboard}    options={{ title: 'BTC' }} />
         <Tab.Screen name="Signal"    component={SignalFeed}      options={{ title: 'SIGNAL' }} />
         <Tab.Screen name="Alerts"    component={PriceAlerts}     options={{ title: 'ALERTS' }} />
-        <Tab.Screen name="Watchlist" component={WatchlistScreen} options={{ title: 'WATCHLIST' }} />
         <Tab.Screen name="Learn"     component={ReadTheLine}     options={{ title: 'LEARN' }} />
         <Tab.Screen name="Profile"   options={{ title: 'PROFILE' }}>
           {() => <ProfileScreen profile={profile} onSignOut={() => setProfile(null)} />}
