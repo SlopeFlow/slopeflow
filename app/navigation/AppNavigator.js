@@ -12,7 +12,6 @@ import BTCDashboard      from '../screens/BTCDashboard';
 import WatchlistScreen   from '../screens/WatchlistScreen';
 import ReadTheLine       from '../screens/ReadTheLine';
 import SignalFeed        from '../screens/SignalFeed';
-import PriceAlerts       from '../screens/PriceAlerts';
 import ProfileModal      from '../components/ProfileModal';
 
 const Tab = createBottomTabNavigator();
@@ -93,8 +92,8 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
-            const icons    = { BTC: '₿', Signal: '📡', Alerts: '🎯', Learn: '🏂' };
-            const iconColors = { BTC: colors.gold, Signal: null, Alerts: null, Learn: null };
+            const icons    = { BTC: '₿', Signal: '📡', Learn: '🏂' };
+            const iconColors = { BTC: colors.gold, Signal: null, Learn: null };
             const iconColor  = focused ? (iconColors[route.name] ?? colors.accent) : (iconColors[route.name] ?? colors.textMuted);
             return <Text style={{ fontSize: 20, color: iconColor }}>{icons[route.name]}</Text>;
           },
@@ -116,7 +115,6 @@ export default function AppNavigator() {
       >
         <Tab.Screen name="BTC"       component={BTCDashboard}    options={{ title: 'BTC' }} />
         <Tab.Screen name="Signal"    component={SignalFeed}      options={{ title: 'SIGNAL' }} />
-        <Tab.Screen name="Alerts"    component={PriceAlerts}     options={{ title: 'ALERTS' }} />
         <Tab.Screen name="Learn"     component={ReadTheLine}     options={{ title: 'LEARN' }} />
       </Tab.Navigator>
     </NavigationContainer>

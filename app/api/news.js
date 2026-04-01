@@ -2,13 +2,11 @@
 // Sources: CoinGecko trending + free RSS feeds (no API key needed)
 // Noise filter: removes influencer/shill content, keeps signal
 
-const COINGECKO_NEWS = 'https://api.coingecko.com/api/v3/news';
-
 // Trusted RSS sources — high signal, low noise
 const RSS_SOURCES = [
   { url: 'https://feeds.feedburner.com/CoinDesk', name: 'CoinDesk' },
   { url: 'https://cointelegraph.com/rss', name: 'CoinTelegraph' },
-  { url: 'https://investing.com/rss/news_301.rss', name: 'Investing.com' },
+  { url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', name: 'CoinDesk Markets' },
 ];
 
 // Noise keywords — filter these out
@@ -46,25 +44,7 @@ function scoreArticle(title, description = '') {
   return score;
 }
 
-// Fetch CoinGecko news (JSON, no key needed)
-async function fetchCoinGeckoNews() {
-  try {
-    const res = await fetch(`${COINGECKO_NEWS}?per_page=20`);
-    const data = await res.json();
-    return (data.data ?? data ?? []).map(item => ({
-      id:          item.id ?? item.url,
-      title:       item.title,
-      description: item.description ?? '',
-      url:         item.url,
-      source:      item.news_site ?? 'CoinGecko',
-      publishedAt: item.created_at ? new Date(item.created_at * 1000) : new Date(),
-      image:       item.thumb_2x ?? item.thumb ?? null,
-    }));
-  } catch (e) {
-    console.error('CoinGecko news error:', e);
-    return [];
-  }
-}
+// CoinGecko news endpoint removed — using RSS only
 
 // Parse RSS via rss2json proxy (no backend needed)
 async function fetchRSS(source) {
@@ -90,12 +70,9 @@ async function fetchRSS(source) {
 
 // Main feed fetch — combines sources, filters noise, ranks by signal
 export async function getSignalFeed() {
-  const [cgNews, ...rssFeeds] = await Promise.all([
-    fetchCoinGeckoNews(),
-    ...RSS_SOURCES.map(fetchRSS),
-  ]);
+  const rssFeeds = await Promise.all(RSS_SOURCES.map(fetchRSS));
 
-  const all = [...cgNews, ...rssFeeds.flat()];
+  const all = rssFeeds.flat();
 
   // Filter noise, score, sort
   const filtered = all

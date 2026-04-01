@@ -5,17 +5,34 @@ import {
 } from 'react-native';
 import { colors, fonts, spacing, radius } from '../theme';
 import { getMultipleQuotes, DEFAULT_WATCHLIST } from '../api/stocks';
+import { supabase } from '../api/supabase';
 
 export default function WatchlistScreen() {
-  const [tickers, setTickers]   = useState(DEFAULT_WATCHLIST);
+  const [tickers, setTickers]   = useState([]);
   const [quotes, setQuotes]     = useState([]);
   const [newTicker, setNewTicker] = useState('');
   const [loading, setLoading]   = useState(true);
 
-  const load = async () => {
+  useEffect(() => {
+    loadWatchlist();
+  }, []);
+
+  const loadWatchlist = async () => {
     try {
-      const data = await getMultipleQuotes(tickers);
-      setQuotes(data);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('watchlist')
+        .select('ticker')
+        .eq('user_id', user.id);
+
+      const saved = data?.map(d => d.ticker) || [];
+      const list = saved.length > 0 ? saved : DEFAULT_WATCHLIST;
+      setTickers(list);
+      
+      const quotes = await getMultipleQuotes(list);
+      setQuotes(quotes);
     } catch (e) {
       console.error('Watchlist load error:', e);
     } finally {
@@ -23,20 +40,42 @@ export default function WatchlistScreen() {
     }
   };
 
-  useEffect(() => { load(); }, [tickers]);
+  const saveWatchlist = async (newList) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-  const addTicker = () => {
+      await supabase.from('watchlist').delete().eq('user_id', user.id);
+      
+      const rows = newList.map(ticker => ({ user_id: user.id, ticker }));
+      await supabase.from('watchlist').insert(rows);
+    } catch (e) {
+      console.error('Save watchlist error:', e);
+    }
+  };
+
+  const addTicker = async () => {
     const t = newTicker.toUpperCase().trim();
     if (!t) return;
     if (tickers.includes(t)) {
       Alert.alert('Already watching', `${t} is already in your watchlist.`);
       return;
     }
-    setTickers([...tickers, t]);
+    const newList = [...tickers, t];
+    setTickers(newList);
     setNewTicker('');
+    await saveWatchlist(newList);
+    const quotes = await getMultipleQuotes(newList);
+    setQuotes(quotes);
   };
 
-  const removeTicker = (t) => setTickers(tickers.filter(x => x !== t));
+  const removeTicker = async (t) => {
+    const newList = tickers.filter(x => x !== t);
+    setTickers(newList);
+    await saveWatchlist(newList);
+    const quotes = await getMultipleQuotes(newList);
+    setQuotes(quotes);
+  };
 
   const renderItem = ({ item }) => {
     const isUp = item.change24h >= 0;

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Animated
 } from 'react-native';
 import { colors, fonts, spacing, radius } from '../theme';
+import { getStreak, markActive } from '../api/streak';
 
 // Sample chart challenges — will pull from Supabase in production
 const CHALLENGES = [
@@ -35,16 +36,23 @@ export default function ReadTheLine() {
   const [current, setCurrent]   = useState(0);
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
-  const [streak, setStreak]     = useState(3); // pull from Supabase in prod
+  const [streak, setStreak]     = useState(0);
+
+  useEffect(() => {
+    getStreak().then(setStreak);
+  }, []);
 
   const challenge = CHALLENGES[current];
   const isCorrect = selected === challenge.answer;
 
-  const handleSelect = (idx) => {
+  const handleSelect = async (idx) => {
     if (revealed) return;
     setSelected(idx);
     setRevealed(true);
-    if (idx === challenge.answer) setStreak(s => s + 1);
+    if (idx === challenge.answer) {
+      const newStreak = await markActive();
+      setStreak(newStreak);
+    }
   };
 
   const next = () => {

@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions
+  TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, TextInput, Alert
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { colors, fonts, spacing, radius } from '../theme';
 import { getBTCPrice, getBTCChart, getBTCStats } from '../api/crypto';
+import { supabase } from '../api/supabase';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH  = SCREEN_WIDTH - spacing.md * 2;
@@ -37,6 +38,8 @@ export default function BTCDashboard() {
   const [chartColor, setChartColor] = useState(colors.green);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [alerts, setAlerts]         = useState([]);
+  const [newAlert, setNewAlert]     = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -48,6 +51,18 @@ export default function BTCDashboard() {
 
       setPrice(priceData);
       setStats(statsData);
+
+      // Load alerts
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('price_alerts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('asset', 'BTC')
+          .order('target_price', { ascending: true });
+        setAlerts(data || []);
+      }
 
       // Build gifted-charts format: { value, label? }
       const sampled = downsample(raw);
@@ -86,6 +101,28 @@ export default function BTCDashboard() {
   }, [load]);
 
   const onRefresh = () => { setRefreshing(true); load(); };
+
+  const addAlert = async () => {
+    const target = parseFloat(newAlert);
+    if (!target || target <= 0) return;
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('price_alerts').insert({
+      user_id: user.id,
+      asset: 'BTC',
+      target_price: target,
+    });
+    
+    setNewAlert('');
+    load();
+  };
+
+  const removeAlert = async (id) => {
+    await supabase.from('price_alerts').delete().eq('id', id);
+    load();
+  };
 
   const isUp        = (price?.change24h ?? 0) >= 0;
   const changeColor = isUp ? colors.green : colors.red;
@@ -200,6 +237,42 @@ export default function BTCDashboard() {
           Supply: {stats?.circulatingSupply?.toLocaleString()} / {stats?.maxSupply?.toLocaleString()} BTC
         </Text>
       </View>
+
+      {/* Price Alerts */}
+      <View style={styles.alertsCard}>
+        <Text style={styles.alertsLabel}>🎯 PRICE ALERTS</Text>
+        <Text style={styles.alertsSub}>Get notified when BTC hits your target</Text>
+        
+        {alerts.map(alert => {
+          const current = price?.price || 0;
+          const isAbove = alert.target_price > current;
+          return (
+            <View key={alert.id} style={styles.alertRow}>
+              <Text style={styles.alertPrice}>
+                {isAbove ? '▲' : '▼'} ${alert.target_price.toLocaleString()}
+              </Text>
+              <TouchableOpacity onPress={() => removeAlert(alert.id)}>
+                <Text style={styles.alertRemove}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+
+        <View style={styles.alertInputRow}>
+          <TextInput
+            style={styles.alertInput}
+            value={newAlert}
+            onChangeText={setNewAlert}
+            placeholder="Target price..."
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numeric"
+            onSubmitEditing={addAlert}
+          />
+          <TouchableOpacity style={styles.alertAddBtn} onPress={addAlert}>
+            <Text style={styles.alertAddText}>+ ADD</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -237,4 +310,14 @@ const styles = StyleSheet.create({
   contextCard:   { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.accent, marginBottom: spacing.xl },
   contextLabel:  { ...fonts.label, color: colors.accent, marginBottom: spacing.sm },
   contextText:   { ...fonts.body, marginBottom: 4 },
+  alertsCard:    { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.xl },
+  alertsLabel:   { ...fonts.label, color: colors.accent, marginBottom: 2 },
+  alertsSub:     { ...fonts.body, fontSize: 12, color: colors.textMuted, marginBottom: spacing.md },
+  alertRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  alertPrice:    { ...fonts.subhead, fontSize: 15 },
+  alertRemove:   { color: colors.textMuted, fontSize: 16, paddingHorizontal: spacing.sm },
+  alertInputRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  alertInput:    { flex: 1, backgroundColor: colors.bg, borderRadius: radius.md, padding: spacing.sm, color: colors.textPrimary, fontSize: 14 },
+  alertAddBtn:   { backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: spacing.md, justifyContent: 'center' },
+  alertAddText:  { color: colors.bg, fontWeight: '800', fontSize: 12 },
 });
