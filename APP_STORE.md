@@ -1,5 +1,54 @@
 # SlopeFlow — App Store Metadata
 
+---
+
+## ⚠️ Next Build Tips & Lessons Learned (v1.0 → v1.0.1+)
+
+### Build Process
+- **Use EAS Build exclusively** — do NOT attempt local Xcode builds on Monterey or any Mac without Xcode 16.1+
+- **EAS command:** `EAS_NO_VCS=1 EAS_SKIP_AUTO_FINGERPRINT=1 eas build --platform ios`
+- **EAS submit command:** `EAS_NO_VCS=1 eas submit --platform ios --url <ipa_url>`
+- **Apple ID for developer account:** JoeBell@kw.com (NOT lokeiangler@gmail.com)
+- **Expo account login:** lokeiangler@gmail.com
+- Fix npm permissions before running EAS: `sudo chown -R $(whoami) /usr/local/lib/node_modules`
+
+### App Icon & Splash
+- [ ] **Replace app icon** with Image 2 (snowboard + chart illustration, blue gradient) — 1024×1024 PNG
+- Current icon is the AI-generated placeholder — update before v1.0.1
+- Splash screen (Image 1 — cinematic dark/cyan) is correctly set in app.json
+
+### Version Numbering
+- v1.0 shipped as 0.1.0 in the build — **update version in app.json to 1.0.0** before next build
+- Update `ios.buildNumber` to increment each submission
+
+### Screenshots
+- Real device/simulator screenshots preferred over generated ones for future updates
+- Current screenshots are programmatically generated — good enough for v1, upgrade for v1.1
+- Use iPhone 15 Pro Max simulator (6.7") for future shots — Apple now prefers 6.7" over 6.5"
+- Also need **5.5" screenshots** (iPhone 8 Plus size) — skipped in v1.0, add in v1.0.1
+
+### App Store Connect — Things to Pre-fill Next Time
+- **Copyright field** — fill in before review submission (blocked us this time): `© 2026 Joe Bell`
+- **Content Rights** — select third-party content option upfront
+- **Age Rating** — complete questionnaire before submission: Simulated Gambling = None, Contests = Infrequent
+- **Privacy Practices** — fill out App Privacy section before submit
+- **Test account credentials** — create a test account in the app and add to App Review Notes
+
+### For v1.0.1 (post-approval quick update)
+- [ ] Update app icon to Image 2
+- [ ] Fix version to 1.0.1
+- [ ] Add 5.5" screenshots
+- [ ] Add real simulator screenshots to replace generated ones
+- [ ] Add test account credentials to App Review Notes
+
+### For v1.1 (feature update)
+- [ ] Onboarding flow for new users
+- [ ] Push notification support for price alerts
+- [ ] Android build via EAS (`eas build --platform android`)
+- [ ] X/Twitter @Slope_Flow feed integration in Signal Feed
+
+---
+
 ## App Name
 SlopeFlow: Teen Trading Education
 
