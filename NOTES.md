@@ -196,11 +196,28 @@ Map all trading concepts to slopestyle snowboarding language:
 - Headline: *"The app that pays your kid to learn trading"*
 - Potential: TechCrunch, parenting blogs, financial education press
 
+### Decisions Locked (2026-04-08) ✅
+- **Payout method:** Venmo
+- **Recovery phase name:** Lap It
+- **XP sources:** Both chores AND learning modules
+- **Chore management:** Parent creates chore list inside the app
+
+### Parent Dashboard — Required Features
+- Create/manage chore list (add, remove, assign XP value per chore)
+- Mark chore complete → XP releases to kid
+- Escrow balance view (funded, earned, pending)
+- Payout trigger → approve Venmo release when threshold hit
+
+### Kid Side — Lap It Screen
+- Shows available chores with XP values
+- Kid marks as done → parent confirms → XP restored
+- Next-day quiz also available as recovery path
+
 ### Next steps
-- [ ] Answer Telly's 4 key questions
-- [ ] Wylder answers A/B/C payout preference
 - [ ] Product spec document
-- [ ] Build parent dashboard wireframe
+- [ ] Build parent dashboard + Lap It screen
+- [ ] Supabase schema update (chores, escrow, payouts tables)
+- [ ] Venmo payout integration research
 
 ## X (Twitter) Account — Setup Checklist
 **Status: Pending — execute next session**

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { supabase } from '../api/supabase';
 import { getProfile, saveProfile } from '../api/auth';
+import { getLinkedParent } from '../api/chores';
 
 import AuthScreen        from '../screens/AuthScreen';
 import OnboardingScreen  from '../screens/OnboardingScreen';
@@ -13,16 +14,18 @@ import BTCDashboard      from '../screens/BTCDashboard';
 import WatchlistScreen   from '../screens/WatchlistScreen';
 import ReadTheLine       from '../screens/ReadTheLine';
 import SignalFeed        from '../screens/SignalFeed';
+import LapIt             from '../screens/LapIt';
+import ParentDashboard   from '../screens/ParentDashboard';
 import ProfileModal      from '../components/ProfileModal';
 
 const Tab = createBottomTabNavigator();
 
 export default function AppNavigator() {
-  const [session,    setSession]    = useState(undefined); // undefined = loading
+  const [session,    setSession]    = useState(undefined);
   const [profile,    setProfile]    = useState(null);
   const [checking,   setChecking]   = useState(true);
+  const [isParent,   setIsParent]   = useState(false);
 
-  // Listen for auth state changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -33,7 +36,7 @@ export default function AppNavigator() {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) loadProfile();
-      else { setProfile(null); setChecking(false); }
+      else { setProfile(null); setChecking(false); setIsParent(false); }
     });
 
     return () => listener.subscription.unsubscribe();
@@ -43,6 +46,9 @@ export default function AppNavigator() {
     try {
       const p = await getProfile();
       setProfile(p);
+      // Check if this user is a parent (has linked kids)
+      const parent = await getLinkedParent().catch(() => null);
+      setIsParent(p?.role === 'parent' || false);
     } catch (e) {
       console.error('Profile load error:', e);
     } finally {
@@ -59,7 +65,6 @@ export default function AppNavigator() {
     }
   };
 
-  // Loading state
   if (checking) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
@@ -68,7 +73,6 @@ export default function AppNavigator() {
     );
   }
 
-  // Not logged in → Auth
   if (!session) {
     return (
       <NavigationContainer>
@@ -77,7 +81,6 @@ export default function AppNavigator() {
     );
   }
 
-  // Logged in but no profile → Onboarding
   if (!profile?.name) {
     return (
       <NavigationContainer>
@@ -86,16 +89,52 @@ export default function AppNavigator() {
     );
   }
 
-  // Fully set up → Main app
+  // ── PARENT VIEW ──────────────────────────────────────────────
+  if (profile?.role === 'parent') {
+    return (
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: ({ focused }) => {
+              const iconMap = {
+                Dashboard: { name: 'people-outline',    color: colors.accent },
+                Watchlist: { name: 'list-outline',       color: colors.accent },
+                Signal:    { name: 'radio-outline',      color: colors.accent },
+              };
+              const ic = iconMap[route.name];
+              const iconColor = focused ? ic.color : colors.textMuted;
+              return <Ionicons name={ic.name} size={22} color={iconColor} />;
+            },
+            tabBarActiveTintColor:   colors.accent,
+            tabBarInactiveTintColor: colors.textMuted,
+            tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: 8, height: 60 },
+            headerStyle:      { backgroundColor: colors.bg, shadowColor: 'transparent' },
+            headerTintColor:  colors.textPrimary,
+            headerTitleStyle: { fontWeight: '800', letterSpacing: 1 },
+            headerRight: () => (
+              <ProfileModal profile={profile} onSignOut={() => { setProfile(null); setSession(null); }} />
+            ),
+          })}
+        >
+          <Tab.Screen name="Dashboard" component={ParentDashboard} options={{ title: 'PARENT' }} />
+          <Tab.Screen name="Watchlist" component={WatchlistScreen} options={{ title: 'WATCHLIST' }} />
+          <Tab.Screen name="Signal"    component={SignalFeed}      options={{ title: 'SIGNAL' }} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    );
+  }
+
+  // ── KID VIEW ─────────────────────────────────────────────────
   return (
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
             const iconMap = {
-              BTC:    { name: 'logo-bitcoin',   color: colors.gold },
-              Signal: { name: 'radio-outline',  color: colors.accent },
-              Learn:  { name: 'school-outline', color: colors.accent },
+              BTC:      { name: 'logo-bitcoin',   color: colors.gold },
+              Signal:   { name: 'radio-outline',  color: colors.accent },
+              Learn:    { name: 'school-outline', color: colors.accent },
+              'Lap It': { name: 'refresh-circle-outline', color: colors.accent },
             };
             const ic = iconMap[route.name];
             const iconColor = focused ? ic.color : colors.textMuted;
@@ -103,12 +142,7 @@ export default function AppNavigator() {
           },
           tabBarActiveTintColor:   colors.accent,
           tabBarInactiveTintColor: colors.textMuted,
-          tabBarStyle: {
-            backgroundColor: colors.card,
-            borderTopColor:  colors.border,
-            paddingBottom:   8,
-            height:          60,
-          },
+          tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: 8, height: 60 },
           headerStyle:      { backgroundColor: colors.bg, shadowColor: 'transparent' },
           headerTintColor:  colors.textPrimary,
           headerTitleStyle: { fontWeight: '800', letterSpacing: 1 },
@@ -117,9 +151,10 @@ export default function AppNavigator() {
           ),
         })}
       >
-        <Tab.Screen name="BTC"       component={BTCDashboard}    options={{ title: 'BTC' }} />
-        <Tab.Screen name="Signal"    component={SignalFeed}      options={{ title: 'SIGNAL' }} />
-        <Tab.Screen name="Learn"     component={ReadTheLine}     options={{ title: 'LEARN' }} />
+        <Tab.Screen name="BTC"      component={BTCDashboard}  options={{ title: 'BTC' }} />
+        <Tab.Screen name="Signal"   component={SignalFeed}    options={{ title: 'SIGNAL' }} />
+        <Tab.Screen name="Learn"    component={ReadTheLine}   options={{ title: 'LEARN' }} />
+        <Tab.Screen name="Lap It"   component={LapIt}         options={{ title: 'LAP IT' }} />
       </Tab.Navigator>
     </NavigationContainer>
   );
