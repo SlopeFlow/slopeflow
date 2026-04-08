@@ -12,6 +12,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 // ─── Step definitions ────────────────────────────────────────────────────────
 const STEPS = [
   { id: 'welcome' },
+  { id: 'role' },
   { id: 'name' },
   { id: 'age' },
   { id: 'experience' },
@@ -34,8 +35,9 @@ const INTEREST_OPTIONS = [
 
 // ─── Step icons ───────────────────────────────────────────────────────────────
 const STEP_ICONS = {
-  welcome:    { name: 'stats-chart',     color: colors.accent },
-  name:       { name: 'person-outline',  color: colors.accent },
+  welcome:    { name: 'stats-chart',       color: colors.accent },
+  role:       { name: 'people-outline',    color: colors.accent },
+  name:       { name: 'person-outline',    color: colors.accent },
   age:        { name: 'calendar-outline',color: colors.accent },
   experience: { name: 'bar-chart-outline', color: colors.accent },
   interests:  { name: 'options-outline', color: colors.accent },
@@ -45,6 +47,7 @@ const STEP_ICONS = {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function OnboardingScreen({ onComplete }) {
   const [step, setStep]         = useState(0);
+  const [role, setRole]         = useState(null); // 'teen' | 'parent'
   const [name, setName]         = useState('');
   const [age, setAge]           = useState('');
   const [experience, setExp]    = useState(null);
@@ -71,7 +74,7 @@ export default function OnboardingScreen({ onComplete }) {
       animateNext(1);
       setStep(s => s + 1);
     } else {
-      onComplete?.({ name, age, experience, interests });
+      onComplete?.({ name, age, experience, interests, role });
     }
   };
 
@@ -91,6 +94,7 @@ export default function OnboardingScreen({ onComplete }) {
   const canContinue = () => {
     switch (STEPS[step].id) {
       case 'welcome':    return true;
+      case 'role':       return role !== null;
       case 'name':       return name.trim().length > 0;
       case 'age':        return age.trim().length > 0 && parseInt(age) > 0;
       case 'experience': return experience !== null;
@@ -126,6 +130,32 @@ export default function OnboardingScreen({ onComplete }) {
                 Real signals. No noise.{'\n'}
                 Built for riders who want to{'\n'}understand markets — not just follow them.
               </Text>
+            </View>
+          )}
+
+          {/* ── ROLE ── */}
+          {STEPS[step].id === 'role' && (
+            <View style={styles.stepWrap}>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
+              <Text style={styles.heading}>Who's{'\n'}dropping in?</Text>
+              <TouchableOpacity
+                style={[styles.optionCard, role === 'teen' && styles.optionCardActive]}
+                onPress={() => setRole('teen')}
+              >
+                <Text style={[styles.optionLabel, role === 'teen' && styles.optionLabelActive]}>
+                  I'm a Teen
+                </Text>
+                <Text style={styles.optionSub}>Learn to trade, earn XP, unlock payouts</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.optionCard, role === 'parent' && styles.optionCardActive]}
+                onPress={() => setRole('parent')}
+              >
+                <Text style={[styles.optionLabel, role === 'parent' && styles.optionLabelActive]}>
+                  I'm a Parent
+                </Text>
+                <Text style={styles.optionSub}>Set up chores, manage escrow, approve payouts</Text>
+              </TouchableOpacity>
             </View>
           )}
 

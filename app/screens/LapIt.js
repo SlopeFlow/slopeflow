@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, Alert, RefreshControl
+  TouchableOpacity, ActivityIndicator, Alert, RefreshControl,
+  TextInput, Share
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
@@ -160,6 +161,18 @@ export default function LapIt() {
         <Text style={styles.footerText}> Your parent approves completions before XP is awarded.</Text>
       </View>
 
+      {/* Parent invite */}
+      {!escrow && (
+        <View style={styles.inviteCard}>
+          <Ionicons name="people-outline" size={28} color={colors.accent} style={{ marginBottom: spacing.sm }} />
+          <Text style={styles.inviteTitle}>Link a Parent</Text>
+          <Text style={styles.inviteText}>
+            Ask your parent to download SlopeFlow, create an account, and enter your invite code below.
+          </Text>
+          <InviteCode />
+        </View>
+      )}
+
     </ScrollView>
   );
 }
@@ -195,4 +208,50 @@ const styles = StyleSheet.create({
   emptyText:      { ...fonts.body, color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginTop: spacing.sm },
   footer:         { flexDirection: 'row', alignItems: 'center', padding: spacing.md, marginTop: spacing.md },
   footerText:     { ...fonts.body, fontSize: 12, color: colors.textMuted, flex: 1 },
+  inviteCard:     { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, marginTop: spacing.lg, alignItems: 'center', borderWidth: 1, borderColor: colors.accent + '44', marginBottom: spacing.xl },
+  inviteTitle:    { ...fonts.subhead, fontSize: 18, marginBottom: spacing.sm },
+  inviteText:     { ...fonts.body, textAlign: 'center', lineHeight: 22, marginBottom: spacing.md, color: colors.textSecondary },
+  inviteCodeBox:  { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: spacing.md },
+  inviteCodeText: { ...fonts.heading, fontSize: 28, color: colors.accent, letterSpacing: 6, flex: 1, textAlign: 'center' },
+  shareBtn:       { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.md, width: '100%' },
+  shareBtnText:   { color: colors.bg, fontWeight: '900', fontSize: 13, letterSpacing: 1 },
 });
+
+// ── Invite Code Component ─────────────────────────────────────
+function InviteCode() {
+  const [code, setCode] = useState(null);
+
+  useEffect(() => {
+    generateCode();
+  }, []);
+
+  const generateCode = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    // Use last 6 chars of user ID as invite code — simple and unique enough
+    const shortCode = user.id.replace(/-/g, '').slice(0, 6).toUpperCase();
+    setCode(shortCode);
+  };
+
+  const handleShare = () => {
+    if (!code) return;
+    Share.share({
+      message: `Join me on SlopeFlow! Download the app and enter my invite code: ${code} to link as my parent.`,
+      title: 'SlopeFlow Parent Invite',
+    });
+  };
+
+  if (!code) return null;
+
+  return (
+    <>
+      <View style={styles.inviteCodeBox}>
+        <Text style={styles.inviteCodeText}>{code}</Text>
+        <Ionicons name="copy-outline" size={20} color={colors.textMuted} />
+      </View>
+      <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+        <Ionicons name="share-outline" size={16} color={colors.bg} style={{ marginRight: 6 }} />
+        <Text style={styles.shareBtnText}>SHARE INVITE</Text>
+      </TouchableOpacity>
+    </>
+  );
+}

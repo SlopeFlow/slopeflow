@@ -9,7 +9,8 @@ import { colors, fonts, spacing, radius } from '../theme';
 import {
   getChoreTemplates, getLinkedKids, assignChore, getAssignedChores,
   removeChore, getPendingCompletions, approveChoreCompletion,
-  rejectChoreCompletion, getEscrow, setupEscrow, requestPayout
+  rejectChoreCompletion, getEscrow, setupEscrow, requestPayout,
+  linkKidByCode
 } from '../api/chores';
 
 const CATEGORIES = ['daily', 'weekly', 'school', 'extra'];
@@ -139,7 +140,8 @@ export default function ParentDashboard() {
     <View style={styles.center}>
       <Ionicons name="people-outline" size={48} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
       <Text style={styles.emptyTitle}>No kids linked yet</Text>
-      <Text style={styles.emptyText}>Ask your kid to share their SlopeFlow email so you can link accounts.</Text>
+      <Text style={styles.emptyText}>Enter your kid's invite code from their Lap It screen.</Text>
+      <LinkKidByCode onLinked={loadData} />
     </View>
   );
 
@@ -435,3 +437,43 @@ const styles = StyleSheet.create({
   modalSaveBtn:       { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm },
   modalSaveBtnText:   { color: colors.bg, fontWeight: '900', fontSize: 14, letterSpacing: 1 },
 });
+
+// ── Link Kid by Invite Code ───────────────────────────────────
+function LinkKidByCode({ onLinked }) {
+  const [code, setCode]       = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLink = async () => {
+    if (!code.trim()) return;
+    setLoading(true);
+    try {
+      const kid = await linkKidByCode(code);
+      Alert.alert('Linked!', `You're now connected to ${kid.name}.`);
+      onLinked?.();
+    } catch (e) {
+      Alert.alert('Not found', e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={{ width: '100%', marginTop: spacing.lg }}>
+      <TextInput
+        style={styles.setupInput}
+        value={code}
+        onChangeText={t => setCode(t.toUpperCase())}
+        placeholder="Enter invite code (e.g. A1B2C3)"
+        placeholderTextColor={colors.textMuted}
+        autoCapitalize="characters"
+        maxLength={6}
+      />
+      <TouchableOpacity style={styles.payoutBtn} onPress={handleLink} disabled={loading}>
+        {loading
+          ? <ActivityIndicator color={colors.bg} />
+          : <Text style={styles.payoutBtnText}>LINK KID</Text>
+        }
+      </TouchableOpacity>
+    </View>
+  );
+}

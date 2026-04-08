@@ -36,6 +36,24 @@ export async function linkKid(kidEmail) {
   return profile.id;
 }
 
+export async function linkKidByCode(inviteCode) {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .eq('invite_code', inviteCode.trim().toUpperCase())
+    .single();
+  if (error || !profile) throw new Error('Invite code not found. Ask your kid to check their Lap It screen.');
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error: linkError } = await supabase
+    .from('family_links')
+    .insert({ parent_id: user.id, kid_id: profile.id });
+  if (linkError && linkError.code !== '23505') throw linkError; // ignore duplicate
+
+  return profile;
+}
+
 export async function getLinkedKids() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
