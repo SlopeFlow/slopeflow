@@ -63,7 +63,6 @@ export default function AppNavigator() {
   if (checking) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
-        <Ionicons name="stats-chart" size={48} color={colors.accent} style={{ marginBottom: 20 }} />
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
