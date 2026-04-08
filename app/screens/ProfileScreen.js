@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   Alert, ScrollView
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { signOut } from '../api/auth';
 
@@ -48,7 +49,7 @@ export default function ProfileScreen({ profile, onSignOut }) {
       {/* Avatar + name */}
       <View style={styles.avatarSection}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarEmoji}>🏂</Text>
+          <Ionicons name="person" size={36} color={colors.accent} />
         </View>
         <Text style={styles.name}>{profile?.name ?? 'Rider'}</Text>
         <Text style={styles.level}>{level.label}</Text>
@@ -71,17 +72,17 @@ export default function ProfileScreen({ profile, onSignOut }) {
       {/* Stats */}
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>🔥</Text>
+          <Ionicons name="flame" size={22} color={colors.gold} style={{ marginBottom: 4 }} />
           <Text style={styles.statValue}>{streak}</Text>
           <Text style={styles.statLabel}>DAY STREAK</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>⚡</Text>
+          <Ionicons name="flash" size={22} color={colors.accent} style={{ marginBottom: 4 }} />
           <Text style={styles.statValue}>{xp}</Text>
           <Text style={styles.statLabel}>TOTAL XP</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>🎯</Text>
+          <Ionicons name="trophy-outline" size={22} color={colors.accent} style={{ marginBottom: 4 }} />
           <Text style={styles.statValue}>{profile?.interests?.length ?? 0}</Text>
           <Text style={styles.statLabel}>FOCUS AREAS</Text>
         </View>
@@ -101,7 +102,7 @@ export default function ProfileScreen({ profile, onSignOut }) {
         <Text style={styles.logoutText}>LOG OUT</Text>
       </TouchableOpacity>
 
-      <Text style={styles.version}>SlopeFlow v0.1.0 · Built by Newsie 📰</Text>
+      <Text style={styles.version}>SlopeFlow v0.1.0</Text>
 
     </ScrollView>
   );
@@ -120,7 +121,6 @@ const styles = StyleSheet.create({
   container:     { flex: 1, backgroundColor: colors.bg, padding: spacing.md },
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
   avatar:        { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.md, borderWidth: 2, borderColor: colors.accent },
-  avatarEmoji:   { fontSize: 36 },
   name:          { ...fonts.heading, fontSize: 24 },
   level:         { ...fonts.label, color: colors.accent, marginTop: 4 },
   card:          { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
@@ -132,7 +132,6 @@ const styles = StyleSheet.create({
   xpHint:        { ...fonts.body, fontSize: 12 },
   statsRow:      { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   statCard:      { flex: 1, backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, alignItems: 'center' },
-  statEmoji:     { fontSize: 22, marginBottom: 4 },
   statValue:     { ...fonts.subhead, fontSize: 20 },
   statLabel:     { ...fonts.label, fontSize: 9, marginTop: 2 },
   sectionLabel:  { ...fonts.label, color: colors.accent, marginBottom: spacing.sm },

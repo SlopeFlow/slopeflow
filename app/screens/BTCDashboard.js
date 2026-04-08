@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, TextInput, Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-gifted-charts';
 import { colors, fonts, spacing, radius } from '../theme';
 import { getBTCPrice, getBTCChart, getBTCStats } from '../api/crypto';
@@ -231,7 +232,7 @@ export default function BTCDashboard() {
 
       {/* Halving context */}
       <View style={styles.contextCard}>
-        <Text style={styles.contextLabel}>⛏ HALVING CONTEXT</Text>
+        <Text style={styles.contextLabel}>HALVING CONTEXT</Text>
         <Text style={styles.contextText}>{stats?.halvingContext}</Text>
         <Text style={styles.contextText}>
           Supply: {stats?.circulatingSupply?.toLocaleString()} / {stats?.maxSupply?.toLocaleString()} BTC
@@ -240,7 +241,7 @@ export default function BTCDashboard() {
 
       {/* Price Alerts */}
       <View style={styles.alertsCard}>
-        <Text style={styles.alertsLabel}>🎯 PRICE ALERTS</Text>
+        <Text style={styles.alertsLabel}>PRICE ALERTS</Text>
         <Text style={styles.alertsSub}>Get notified when BTC hits your target</Text>
         
         {alerts.map(alert => {
@@ -252,7 +253,7 @@ export default function BTCDashboard() {
                 {isAbove ? '▲' : '▼'} ${alert.target_price.toLocaleString()}
               </Text>
               <TouchableOpacity onPress={() => removeAlert(alert.id)}>
-                <Text style={styles.alertRemove}>✕</Text>
+                <Ionicons name="close" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           );

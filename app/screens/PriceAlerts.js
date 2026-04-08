@@ -4,6 +4,7 @@ import {
   TouchableOpacity, TextInput, Alert,
   Animated, Vibration
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { getBTCPrice } from '../api/crypto';
 
@@ -53,13 +54,11 @@ export default function PriceAlerts() {
   };
 
   const triggerAlert = (alert, price) => {
-    // Vibrate
     Vibration.vibrate([0, 200, 100, 200]);
 
-    // Show banner
     const msg = alert.direction === 'above'
-      ? `BTC hit $${price.toLocaleString()} — above your $${alert.targetPrice.toLocaleString()} target 🚀`
-      : `BTC dropped to $${price.toLocaleString()} — below your $${alert.targetPrice.toLocaleString()} level 📉`;
+      ? `BTC hit $${price.toLocaleString()} — above your $${alert.targetPrice.toLocaleString()} target`
+      : `BTC dropped to $${price.toLocaleString()} — below your $${alert.targetPrice.toLocaleString()} level`;
 
     setBanner(msg);
     Animated.sequence([
@@ -92,8 +91,8 @@ export default function PriceAlerts() {
     setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
-  const activeAlerts   = alerts.filter(a => !a.triggered);
-  const hitAlerts      = triggered;
+  const activeAlerts = alerts.filter(a => !a.triggered);
+  const hitAlerts    = triggered;
 
   return (
     <View style={styles.container}>
@@ -101,7 +100,8 @@ export default function PriceAlerts() {
       {/* Alert banner */}
       {banner && (
         <Animated.View style={[styles.banner, { transform: [{ translateY: bannerAnim }] }]}>
-          <Text style={styles.bannerText}>🔔 {banner}</Text>
+          <Ionicons name="notifications" size={16} color={colors.bg} style={{ marginRight: 6 }} />
+          <Text style={styles.bannerText}>{banner}</Text>
         </Animated.View>
       )}
 
@@ -165,7 +165,7 @@ export default function PriceAlerts() {
                 {alert.direction === 'above' ? 'Alert if BTC goes above' : 'Alert if BTC drops below'} this level
               </Text>
               <TouchableOpacity onPress={() => removeAlert(alert.id)} style={styles.removeBtn}>
-                <Text style={styles.removeText}>✕</Text>
+                <Ionicons name="close" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           ))}
@@ -178,7 +178,11 @@ export default function PriceAlerts() {
           <Text style={styles.sectionLabel}>TRIGGERED</Text>
           {hitAlerts.map(alert => (
             <View key={alert.id + '_hit'} style={[styles.alertRow, styles.alertRowHit]}>
-              <Text style={styles.alertDir}>{alert.direction === 'above' ? '🚀' : '📉'}</Text>
+              <Ionicons
+                name={alert.direction === 'above' ? 'trending-up' : 'trending-down'}
+                size={16}
+                color={alert.direction === 'above' ? colors.green : colors.red}
+              />
               <Text style={styles.alertPrice}>${alert.targetPrice.toLocaleString()}</Text>
               <Text style={styles.alertHitPrice}>hit @ ${alert.hitPrice?.toLocaleString()}</Text>
             </View>
@@ -188,7 +192,7 @@ export default function PriceAlerts() {
 
       {activeAlerts.length === 0 && hitAlerts.length === 0 && (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>🎯</Text>
+          <Ionicons name="notifications-outline" size={48} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
           <Text style={styles.emptyText}>No alerts set yet.{'\n'}Set a target or bail point above.</Text>
         </View>
       )}
@@ -198,8 +202,8 @@ export default function PriceAlerts() {
 
 const styles = StyleSheet.create({
   container:       { flex: 1, backgroundColor: colors.bg, padding: spacing.md },
-  banner:          { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: colors.accent, padding: spacing.md },
-  bannerText:      { color: colors.bg, fontWeight: '800', fontSize: 14 },
+  banner:          { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: colors.accent, padding: spacing.md, flexDirection: 'row', alignItems: 'center' },
+  bannerText:      { color: colors.bg, fontWeight: '800', fontSize: 14, flex: 1 },
   priceCard:       { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.accent },
   priceLabel:      { ...fonts.label, color: colors.accent, marginBottom: 4 },
   priceValue:      { ...fonts.price, fontSize: 30 },
@@ -225,8 +229,6 @@ const styles = StyleSheet.create({
   alertLabel:      { ...fonts.body, fontSize: 12, flex: 2 },
   alertHitPrice:   { ...fonts.body, fontSize: 12, color: colors.textMuted },
   removeBtn:       { padding: spacing.xs },
-  removeText:      { color: colors.textMuted, fontSize: 16 },
   empty:           { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: spacing.xl },
-  emptyEmoji:      { fontSize: 48, marginBottom: spacing.md },
-  emptyText:       { ...fonts.body, textAlign: 'center', lineHeight: 24 },
+  emptyText:       { ...fonts.body, textAlign: 'center', lineHeight: 24, color: colors.textMuted },
 });

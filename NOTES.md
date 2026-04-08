@@ -231,5 +231,19 @@ Map all trading concepts to slopestyle snowboarding language:
    - Post types: daily BTC signal, Read the Line chart challenge, app features, Wylder clips, parent-facing education posts
    - Newsie builds 30-day content calendar once account is live
 
-## Session Log
+## Articles to Consider
+
+### "The Claw native app studio | Scale apps to $20k/mo with agents"
+- Source: @ernestosoftware on X (2026-03-26)
+- Tweet: https://x.com/ernestosoftware/status/2037187494530208029
+- Relevance: AI agent-driven app studio model — potential framework for scaling SlopeFlow and future apps
+- Flag: Review when planning v2 / monetization strategy
 - **2026-03-31** — FULL BUILD DAY. Concept → named SlopeFlow → icons → MVP features → codebase → live charts → range switcher (15M–1Y) → onboarding → Supabase DB → auth → GitHub repo → **running live on Joe's iPhone**. First user: ShreddySnipes (Wylder, age 15). BTC showing $68,189, ▲2.60%, live chart, all three tabs functional. 🏔
+- **2026-04-01** — v1 complete. Signal feed (RSS), watchlist + streak Supabase-backed, price alerts in BTC dashboard, privacy policy live. App Store metadata drafted. X Developer API live (@Slope_Flow). Apple Developer enrolled + paid. Build Directive PDF created. **Build blocker:** Mac mini Monterey max Xcode 14.2, Expo 54 + RN 0.81.5 requires Xcode 16.1+. Resolution pending: EAS cloud build OR new Mac (M4 mini ~$599).
+
+## Build Submission — Status & Options
+- **App Store Connect:** listing created, Bundle ID registered (com.bellistics.slopeflow)
+- **Privacy policy:** https://slopeflow.github.io/slopeflow/privacy.html
+- **Blocker:** Local build impossible on Monterey. Two paths:
+  - **EAS Build (recommended now):** `npm install -g eas-cli` → `eas login` → `eas build --platform ios` — builds on Expo cloud, no Xcode needed locally
+  - **New Mac M4 mini (~$599):** permanent fix, future-proof for all future apps

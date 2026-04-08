@@ -7,7 +7,15 @@ import {
 import { colors, fonts, spacing, radius } from '../theme';
 import { getSignalFeed, timeAgo } from '../api/news';
 
-const TAGS = ['ALL', '₿ BTC', '📊 MACRO', '🏦 INST', '⚖️ REG', '📈 STOCKS'];
+const TAGS = ['ALL', '₿ BTC', 'MACRO', 'INST', 'REG', 'STOCKS'];
+const TAG_MAP = {
+  'ALL':    'ALL',
+  '₿ BTC':  '₿ BTC',
+  'MACRO':  '📊 MACRO',
+  'INST':   '🏦 INST',
+  'REG':    '⚖️ REG',
+  'STOCKS': '📈 STOCKS',
+};
 
 export default function SignalFeed() {
   const [articles, setArticles]   = useState([]);
@@ -36,7 +44,8 @@ export default function SignalFeed() {
     if (tag === 'ALL') {
       setFiltered(articles);
     } else {
-      setFiltered(articles.filter(a => a.tag === tag));
+      const apiTag = TAG_MAP[tag];
+      setFiltered(articles.filter(a => a.tag === apiTag));
     }
   };
 

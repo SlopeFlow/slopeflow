@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Animated
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { getStreak, markActive } from '../api/streak';
 
@@ -14,10 +15,10 @@ const CHALLENGES = [
     asset: 'BTC',
     setup: 'Price has bounced off this level 3 times in 2 weeks. Volume is rising.',
     chartNote: '[Chart: BTC holding $82K support, rising volume]',
-    options: ['Break higher 🚀', 'Rejection, drop incoming 📉', 'Chop sideways 😐'],
+    options: ['Break higher', 'Rejection, drop incoming', 'Chop sideways'],
     answer: 0,
     explanation: 'Three touches of support with rising volume = accumulation. Bulls are defending this level hard. Classic setup for a breakout.',
-    metaphor: '🏂 Like seeing a perfect lip on the jump — the build-up tells you what\'s coming.',
+    metaphor: 'Like seeing a perfect lip on the jump — the build-up tells you what\'s coming.',
   },
   {
     id: 2,
@@ -25,10 +26,10 @@ const CHALLENGES = [
     asset: 'BTC',
     setup: 'Price just made a new all-time high but volume was lower than the previous high.',
     chartNote: '[Chart: BTC new ATH, declining volume on push]',
-    options: ['Confirmed breakout, buy more 🚀', 'Warning sign — weak hands 🚩', 'Doesn\'t matter 🤷'],
+    options: ['Confirmed breakout, buy more', 'Warning sign — weak hands', 'Doesn\'t matter'],
     answer: 1,
     explanation: 'New highs on declining volume = divergence. Price is moving up but fewer people are driving it. Often precedes a pullback.',
-    metaphor: '🏂 Like hitting a big trick but your speed was off — looked good, but the landing is sketchy.',
+    metaphor: 'Like hitting a big trick but your speed was off — looked good, but the landing is sketchy.',
   },
 ];
 
@@ -70,7 +71,7 @@ export default function ReadTheLine() {
           <Text style={styles.heading}>READ THE LINE</Text>
         </View>
         <View style={styles.streakBadge}>
-          <Text style={styles.streakFire}>🔥</Text>
+          <Ionicons name="flame" size={18} color={colors.gold} />
           <Text style={styles.streakCount}>{streak}</Text>
         </View>
       </View>
@@ -114,9 +115,16 @@ export default function ReadTheLine() {
       {/* Reveal explanation */}
       {revealed && (
         <View style={[styles.explanationCard, { borderLeftColor: isCorrect ? colors.green : colors.red }]}>
-          <Text style={[styles.resultText, { color: isCorrect ? colors.green : colors.red }]}>
-            {isCorrect ? '✅ Clean read.' : '❌ Off the line.'}
-          </Text>
+          <View style={styles.resultRow}>
+            <Ionicons
+              name={isCorrect ? 'checkmark-circle' : 'close-circle'}
+              size={20}
+              color={isCorrect ? colors.green : colors.red}
+            />
+            <Text style={[styles.resultText, { color: isCorrect ? colors.green : colors.red }]}>
+              {isCorrect ? ' Clean read.' : ' Off the line.'}
+            </Text>
+          </View>
           <Text style={styles.explanationText}>{challenge.explanation}</Text>
           <Text style={styles.metaphorText}>{challenge.metaphor}</Text>
           <TouchableOpacity style={styles.nextBtn} onPress={next}>
@@ -133,8 +141,7 @@ const styles = StyleSheet.create({
   header:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
   label:           { ...fonts.label, color: colors.accent },
   heading:         { ...fonts.heading, fontSize: 24 },
-  streakBadge:     { backgroundColor: colors.card, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, alignItems: 'center' },
-  streakFire:      { fontSize: 18 },
+  streakBadge:     { backgroundColor: colors.card, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, alignItems: 'center', flexDirection: 'row', gap: 4 },
   streakCount:     { color: colors.gold, fontWeight: '900', fontSize: 18 },
   meta:            { ...fonts.label, color: colors.textMuted, marginBottom: spacing.md },
   chartBox:        { height: 160, backgroundColor: colors.card, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.md },
@@ -150,7 +157,8 @@ const styles = StyleSheet.create({
   optionWrong:     { borderColor: colors.red, backgroundColor: '#FF174420' },
   optionText:      { ...fonts.body, color: colors.textPrimary },
   explanationCard: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md, borderLeftWidth: 3 },
-  resultText:      { fontWeight: '800', fontSize: 16, marginBottom: spacing.sm },
+  resultRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  resultText:      { fontWeight: '800', fontSize: 16 },
   explanationText: { ...fonts.body, marginBottom: spacing.sm },
   metaphorText:    { ...fonts.body, color: colors.accent, fontStyle: 'italic', marginBottom: spacing.md },
   nextBtn:         { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md, alignItems: 'center' },

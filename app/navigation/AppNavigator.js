@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { supabase } from '../api/supabase';
 import { getProfile, saveProfile } from '../api/auth';
@@ -62,7 +63,7 @@ export default function AppNavigator() {
   if (checking) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ fontSize: 40, marginBottom: 20 }}>🏔</Text>
+        <Ionicons name="stats-chart" size={48} color={colors.accent} style={{ marginBottom: 20 }} />
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
@@ -92,10 +93,14 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused }) => {
-            const icons    = { BTC: '₿', Signal: '📡', Learn: '🏂' };
-            const iconColors = { BTC: colors.gold, Signal: null, Learn: null };
-            const iconColor  = focused ? (iconColors[route.name] ?? colors.accent) : (iconColors[route.name] ?? colors.textMuted);
-            return <Text style={{ fontSize: 20, color: iconColor }}>{icons[route.name]}</Text>;
+            const iconMap = {
+              BTC:    { name: 'logo-bitcoin',   color: colors.gold },
+              Signal: { name: 'radio-outline',  color: colors.accent },
+              Learn:  { name: 'school-outline', color: colors.accent },
+            };
+            const ic = iconMap[route.name];
+            const iconColor = focused ? ic.color : colors.textMuted;
+            return <Ionicons name={ic.name} size={22} color={iconColor} />;
           },
           tabBarActiveTintColor:   colors.accent,
           tabBarInactiveTintColor: colors.textMuted,

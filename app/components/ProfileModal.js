@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   Modal, Alert, Pressable
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { signOut } from '../api/auth';
 
@@ -63,7 +64,12 @@ export default function ProfileModal({ profile, onSignOut }) {
               </View>
               <View>
                 <Text style={styles.profileName}>{name}</Text>
-                <Text style={styles.profileSub}>🔥 {streak} streak · ⚡ {xp} xp</Text>
+                <View style={styles.profileSubRow}>
+                  <Ionicons name="flame" size={13} color={colors.gold} />
+                  <Text style={styles.profileSub}> {streak} streak · </Text>
+                  <Ionicons name="flash" size={13} color={colors.accent} />
+                  <Text style={styles.profileSub}> {xp} xp</Text>
+                </View>
               </View>
             </View>
 
@@ -110,7 +116,8 @@ const styles = StyleSheet.create({
   avatarLarge:     { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.accent, justifyContent: 'center', alignItems: 'center' },
   avatarLargeText: { color: colors.bg, fontWeight: '900', fontSize: 18 },
   profileName:     { ...fonts.subhead, fontSize: 16 },
-  profileSub:      { ...fonts.body, fontSize: 12, marginTop: 2 },
+  profileSubRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  profileSub:      { ...fonts.body, fontSize: 12 },
   divider:         { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
   statsRow:        { flexDirection: 'row', justifyContent: 'space-between', marginVertical: spacing.xs },
   pill:            { alignItems: 'center', flex: 1 },

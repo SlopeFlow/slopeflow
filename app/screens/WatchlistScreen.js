@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, FlatList,
   TouchableOpacity, TextInput, Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { getMultipleQuotes, DEFAULT_WATCHLIST } from '../api/stocks';
 import { supabase } from '../api/supabase';
@@ -93,11 +94,14 @@ export default function WatchlistScreen() {
             {arrow} {Math.abs(item.change24h).toFixed(2)}%
           </Text>
           {item.dividendYield !== 'N/A' && (
-            <Text style={styles.yield}>💰 {item.dividendYield} yield</Text>
+            <View style={styles.yieldRow}>
+              <Ionicons name="cash-outline" size={12} color={colors.gold} />
+              <Text style={styles.yield}> {item.dividendYield} yield</Text>
+            </View>
           )}
         </View>
         <TouchableOpacity onPress={() => removeTicker(item.ticker)} style={styles.removeBtn}>
-          <Text style={styles.removeText}>✕</Text>
+          <Ionicons name="close" size={18} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
     );
@@ -147,9 +151,9 @@ const styles = StyleSheet.create({
   name:      { ...fonts.body, fontSize: 13, marginTop: 2 },
   price:     { ...fonts.subhead, fontSize: 16 },
   change:    { fontSize: 13, fontWeight: '700', marginTop: 2 },
-  yield:     { fontSize: 12, color: colors.gold, marginTop: 3 },
+  yieldRow:  { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  yield:     { fontSize: 12, color: colors.gold },
   removeBtn: { padding: spacing.sm },
-  removeText:{ color: colors.textMuted, fontSize: 16 },
   sep:       { height: spacing.sm },
   addRow:    { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   input:     { flex: 1, backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, color: colors.textPrimary, fontSize: 15 },

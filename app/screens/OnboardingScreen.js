@@ -4,6 +4,7 @@ import {
   TextInput, ScrollView, Dimensions, Animated,
   KeyboardAvoidingView, Platform
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -26,10 +27,20 @@ const EXPERIENCE_OPTIONS = [
 
 const INTEREST_OPTIONS = [
   { id: 'btc',       label: '₿  Bitcoin',        sub: 'Crypto & BTC cycles' },
-  { id: 'stocks',    label: '📈 Stocks',          sub: 'Equities & dividends' },
-  { id: 'futures',   label: '⚡ Futures',         sub: 'NQ, MNQ, ES' },
-  { id: 'all',       label: '🏔 All of it',       sub: 'I want the full mountain' },
+  { id: 'stocks',    label: 'Stocks',             sub: 'Equities & dividends' },
+  { id: 'futures',   label: 'Futures',            sub: 'NQ, MNQ, ES' },
+  { id: 'all',       label: 'All of it',          sub: 'I want the full mountain' },
 ];
+
+// ─── Step icons ───────────────────────────────────────────────────────────────
+const STEP_ICONS = {
+  welcome:    { name: 'stats-chart',     color: colors.accent },
+  name:       { name: 'person-outline',  color: colors.accent },
+  age:        { name: 'calendar-outline',color: colors.accent },
+  experience: { name: 'bar-chart-outline', color: colors.accent },
+  interests:  { name: 'options-outline', color: colors.accent },
+  ready:      { name: 'checkmark-circle',color: colors.green },
+};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function OnboardingScreen({ onComplete }) {
@@ -90,6 +101,8 @@ export default function OnboardingScreen({ onComplete }) {
   };
 
   const progress = (step / (STEPS.length - 1)) * 100;
+  const stepId = STEPS[step].id;
+  const stepIcon = STEP_ICONS[stepId];
 
   return (
     <KeyboardAvoidingView
@@ -107,7 +120,7 @@ export default function OnboardingScreen({ onComplete }) {
           {/* ── WELCOME ── */}
           {STEPS[step].id === 'welcome' && (
             <View style={styles.stepWrap}>
-              <Text style={styles.emoji}>🏔</Text>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
               <Text style={styles.heading}>Welcome to{'\n'}SlopeFlow</Text>
               <Text style={styles.body}>
                 Real signals. No noise.{'\n'}
@@ -119,7 +132,7 @@ export default function OnboardingScreen({ onComplete }) {
           {/* ── NAME ── */}
           {STEPS[step].id === 'name' && (
             <View style={styles.stepWrap}>
-              <Text style={styles.emoji}>👤</Text>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
               <Text style={styles.heading}>What do{'\n'}we call you?</Text>
               <TextInput
                 style={styles.input}
@@ -137,7 +150,7 @@ export default function OnboardingScreen({ onComplete }) {
           {/* ── AGE ── */}
           {STEPS[step].id === 'age' && (
             <View style={styles.stepWrap}>
-              <Text style={styles.emoji}>🎂</Text>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
               <Text style={styles.heading}>How old{'\n'}are you?</Text>
               <TextInput
                 style={[styles.input, styles.inputCenter]}
@@ -161,7 +174,7 @@ export default function OnboardingScreen({ onComplete }) {
           {/* ── EXPERIENCE ── */}
           {STEPS[step].id === 'experience' && (
             <View style={styles.stepWrap}>
-              <Text style={styles.emoji}>📊</Text>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
               <Text style={styles.heading}>Where are{'\n'}you on the mountain?</Text>
               {EXPERIENCE_OPTIONS.map(opt => (
                 <TouchableOpacity
@@ -181,7 +194,7 @@ export default function OnboardingScreen({ onComplete }) {
           {/* ── INTERESTS ── */}
           {STEPS[step].id === 'interests' && (
             <View style={styles.stepWrap}>
-              <Text style={styles.emoji}>🎯</Text>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
               <Text style={styles.heading}>What are you{'\n'}riding toward?</Text>
               <Text style={styles.subhead}>Pick all that apply</Text>
               {INTEREST_OPTIONS.map(opt => (
@@ -202,7 +215,7 @@ export default function OnboardingScreen({ onComplete }) {
           {/* ── READY ── */}
           {STEPS[step].id === 'ready' && (
             <View style={styles.stepWrap}>
-              <Text style={styles.emoji}>🚀</Text>
+              <Ionicons name={stepIcon.name} size={52} color={stepIcon.color} style={styles.icon} />
               <Text style={styles.heading}>You're{'\n'}dropped in, {name}.</Text>
               <Text style={styles.body}>
                 Your line is set.{'\n'}
@@ -212,7 +225,7 @@ export default function OnboardingScreen({ onComplete }) {
                 <SummaryRow label="NAME"       value={name} />
                 <SummaryRow label="AGE"        value={age} />
                 <SummaryRow label="LEVEL"      value={EXPERIENCE_OPTIONS.find(e => e.id === experience)?.label ?? ''} />
-                <SummaryRow label="FOCUS"      value={interests.map(i => INTEREST_OPTIONS.find(o => o.id === i)?.label.split(' ')[1]).join(', ')} />
+                <SummaryRow label="FOCUS"      value={interests.map(i => INTEREST_OPTIONS.find(o => o.id === i)?.label.split(' ').slice(-1)[0]).join(', ')} />
               </View>
             </View>
           )}
@@ -258,7 +271,7 @@ const styles = StyleSheet.create({
   content:          { flex: 1 },
   scroll:           { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl },
   stepWrap:         { flex: 1, justifyContent: 'center' },
-  emoji:            { fontSize: 52, marginBottom: spacing.md },
+  icon:             { marginBottom: spacing.md },
   heading:          { ...fonts.heading, marginBottom: spacing.md, lineHeight: 36 },
   body:             { ...fonts.body, fontSize: 17, lineHeight: 26, marginBottom: spacing.lg },
   subhead:          { ...fonts.body, marginBottom: spacing.md },

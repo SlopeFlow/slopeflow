@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator,
   KeyboardAvoidingView, Platform, Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { signIn, signUp } from '../api/auth';
 
@@ -20,7 +21,7 @@ export default function AuthScreen({ onAuth }) {
       if (mode === 'signup') {
         await signUp(email.trim(), password.trim());
         Alert.alert(
-          'Check your email 📬',
+          'Check your email',
           'We sent a confirmation link. Verify and come back to ride.',
         );
       } else {
@@ -41,7 +42,7 @@ export default function AuthScreen({ onAuth }) {
     >
       {/* Logo */}
       <View style={styles.logoWrap}>
-        <Text style={styles.logoEmoji}>🏔</Text>
+        <Ionicons name="stats-chart" size={56} color={colors.accent} style={{ marginBottom: spacing.sm }} />
         <Text style={styles.logoText}>SlopeFlow</Text>
         <Text style={styles.tagline}>Read the mountain. Trade the line.</Text>
       </View>
@@ -115,7 +116,6 @@ export default function AuthScreen({ onAuth }) {
 const styles = StyleSheet.create({
   container:      { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, justifyContent: 'center' },
   logoWrap:       { alignItems: 'center', marginBottom: spacing.xl },
-  logoEmoji:      { fontSize: 56, marginBottom: spacing.sm },
   logoText:       { ...fonts.heading, fontSize: 36, color: colors.accent },
   tagline:        { ...fonts.body, marginTop: spacing.sm, textAlign: 'center' },
   tabRow:         { flexDirection: 'row', backgroundColor: colors.card, borderRadius: radius.md, padding: 4, marginBottom: spacing.lg },
