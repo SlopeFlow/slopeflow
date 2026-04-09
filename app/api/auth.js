@@ -28,7 +28,7 @@ export async function getSession() {
 }
 
 // ─── Save onboarding profile ──────────────────────────────────────────────────
-export async function saveProfile({ name, age, experience, interests }) {
+export async function saveProfile({ name, age, experience, interests, role }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -40,6 +40,7 @@ export async function saveProfile({ name, age, experience, interests }) {
       age:        parseInt(age),
       experience,
       interests,
+      role:       role ?? 'teen',
       updated_at: new Date().toISOString(),
     });
   if (error) throw error;

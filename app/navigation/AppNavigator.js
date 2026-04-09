@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { supabase } from '../api/supabase';
 import { getProfile, saveProfile } from '../api/auth';
-import { getLinkedParent } from '../api/chores';
 
 import AuthScreen        from '../screens/AuthScreen';
 import OnboardingScreen  from '../screens/OnboardingScreen';
@@ -46,9 +45,7 @@ export default function AppNavigator() {
     try {
       const p = await getProfile();
       setProfile(p);
-      // Check if this user is a parent (has linked kids)
-      const parent = await getLinkedParent().catch(() => null);
-      setIsParent(p?.role === 'parent' || false);
+      setIsParent(p?.role === 'parent');
     } catch (e) {
       console.error('Profile load error:', e);
     } finally {
