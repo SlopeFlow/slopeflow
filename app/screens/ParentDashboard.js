@@ -141,6 +141,7 @@ export default function ParentDashboard() {
       <Ionicons name="people-outline" size={48} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
       <Text style={styles.emptyTitle}>No kids linked yet</Text>
       <Text style={styles.emptyText}>Enter your kid's invite code from their Lap It screen.</Text>
+      <Text style={styles.emptyHint}>Don't have a code? Your kid needs to sign up first, then share their invite code from the Lap It tab.</Text>
       <LinkKidByCode onLinked={loadData} />
     </View>
   );
@@ -426,6 +427,7 @@ const styles = StyleSheet.create({
   emptyState:         { alignItems: 'center', paddingVertical: spacing.xl },
   emptyTitle:         { ...fonts.subhead, marginBottom: spacing.sm },
   emptyText:          { ...fonts.body, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
+  emptyHint:          { ...fonts.body, color: colors.textMuted, textAlign: 'center', lineHeight: 20, fontSize: 12, marginTop: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: spacing.md },
   setupCard:          { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md },
   setupInfo:          { ...fonts.body, marginBottom: spacing.md, lineHeight: 22 },
   inputLabel:         { ...fonts.label, marginBottom: 4, marginTop: spacing.sm },
