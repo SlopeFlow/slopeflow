@@ -227,9 +227,13 @@ function InviteCode() {
 
   const generateCode = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    // Use last 6 chars of user ID as invite code — simple and unique enough
     const shortCode = user.id.replace(/-/g, '').slice(0, 6).toUpperCase();
     setCode(shortCode);
+    // Save invite code to profile so parent lookup works
+    await supabase
+      .from('profiles')
+      .update({ invite_code: shortCode })
+      .eq('id', user.id);
   };
 
   const handleShare = () => {

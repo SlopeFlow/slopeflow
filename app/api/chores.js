@@ -58,10 +58,22 @@ export async function getLinkedKids() {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from('family_links')
-    .select('kid_id, profiles!family_links_kid_id_fkey(name, email)')
+    .select('kid_id')
     .eq('parent_id', user.id);
   if (error) throw error;
-  return data;
+  if (!data || data.length === 0) return [];
+
+  // Fetch kid profiles separately
+  const kidIds = data.map(d => d.kid_id);
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name, email')
+    .in('id', kidIds);
+
+  return data.map(d => ({
+    kid_id: d.kid_id,
+    profiles: profiles?.find(p => p.id === d.kid_id) ?? null,
+  }));
 }
 
 export async function getLinkedParent() {
