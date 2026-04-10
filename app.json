@@ -19,16 +19,23 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bellistics.slopeflow",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "runtimeVersion": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0D0D0D"
       },
-      "package": "com.bellistics.slopeflow"
+      "package": "com.bellistics.slopeflow",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d561dbcd-a615-4c1b-8b00-fbba8404f9b6"
     }
   }
 }
