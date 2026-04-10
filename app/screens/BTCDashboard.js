@@ -130,8 +130,11 @@ export default function BTCDashboard() {
   const arrow       = isUp ? '▲' : '▼';
 
   const chartMin = chartData.length
-    ? Math.min(...chartData.map(d => d.value)) * 0.998
-    : 0;
+    ? Math.min(...chartData.map(d => d.value)) * 0.9975
+    : undefined;
+  const chartMax = chartData.length
+    ? Math.max(...chartData.map(d => d.value)) * 1.0025
+    : undefined;
 
   if (loading) return (
     <View style={styles.center}>
@@ -193,6 +196,7 @@ export default function BTCDashboard() {
             curved
             hideDataPoints
             minValue={chartMin}
+            maxValue={chartMax}
             noOfSections={4}
             yAxisColor="transparent"
             xAxisColor={colors.border}

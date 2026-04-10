@@ -1,13 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Alert, ScrollView
+  Alert, ScrollView, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
 import { signOut } from '../api/auth';
+import { getLinkedKids, getLinkedParent } from '../api/chores';
 
 export default function ProfileScreen({ profile, onSignOut }) {
+  const [linkedKids, setLinkedKids]     = useState([]);
+  const [linkedParent, setLinkedParent] = useState(null);
+  const [linksLoading, setLinksLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [kids, parent] = await Promise.all([getLinkedKids(), getLinkedParent()]);
+        setLinkedKids(kids);
+        setLinkedParent(parent);
+      } catch (e) {
+        // silently fail — not critical
+      } finally {
+        setLinksLoading(false);
+      }
+    })();
+  }, []);
+
   const handleLogout = () => {
     Alert.alert(
       'Log Out',
@@ -97,6 +116,34 @@ export default function ProfileScreen({ profile, onSignOut }) {
         <DetailRow label="INTERESTS"  value={profile?.interests?.join(', ') ?? '—'} />
       </View>
 
+      {/* Linked accounts */}
+      <View style={styles.card}>
+        <Text style={styles.sectionLabel}>LINKED WITH</Text>
+        {linksLoading ? (
+          <ActivityIndicator size="small" color={colors.accent} />
+        ) : (
+          <>
+            {linkedParent && (
+              <View style={styles.linkRow}>
+                <Ionicons name="person-circle-outline" size={18} color={colors.accent} />
+                <Text style={styles.linkName}>{linkedParent.profiles?.name ?? 'Parent'}</Text>
+                <Text style={styles.linkRole}>PARENT</Text>
+              </View>
+            )}
+            {linkedKids.map(k => (
+              <View key={k.kid_id} style={styles.linkRow}>
+                <Ionicons name="person-outline" size={18} color={colors.green} />
+                <Text style={styles.linkName}>{k.profiles?.name ?? 'Kid'}</Text>
+                <Text style={[styles.linkRole, { color: colors.green }]}>KID</Text>
+              </View>
+            ))}
+            {!linkedParent && linkedKids.length === 0 && (
+              <Text style={styles.linkEmpty}>No accounts linked yet.</Text>
+            )}
+          </>
+        )}
+      </View>
+
       {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Text style={styles.logoutText}>LOG OUT</Text>
@@ -138,6 +185,10 @@ const styles = StyleSheet.create({
   detailRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   detailLabel:   { ...fonts.label },
   detailValue:   { ...fonts.body, color: colors.textPrimary, fontWeight: '600', textTransform: 'capitalize' },
+  linkRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border, gap: spacing.sm },
+  linkName:      { ...fonts.body, color: colors.textPrimary, fontWeight: '600', flex: 1 },
+  linkRole:      { ...fonts.label, fontSize: 10, color: colors.accent },
+  linkEmpty:     { ...fonts.body, color: colors.textMuted, fontSize: 13 },
   logoutBtn:     { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginBottom: spacing.md, borderWidth: 1, borderColor: colors.red },
   logoutText:    { color: colors.red, fontWeight: '900', fontSize: 14, letterSpacing: 1 },
   version:       { ...fonts.body, fontSize: 11, textAlign: 'center', marginBottom: spacing.xl },

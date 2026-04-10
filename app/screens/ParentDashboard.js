@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, FlatList, Modal, Pressable
+  TextInput, Alert, ActivityIndicator, FlatList, Modal, Pressable,
+  KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, spacing, radius } from '../theme';
@@ -315,30 +316,35 @@ export default function ParentDashboard() {
 
       {/* Custom chore modal */}
       <Modal visible={showAddChore} transparent animationType="slide" onRequestClose={() => setShowAddChore(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowAddChore(false)}>
-          <Pressable style={styles.modalSheet} onPress={e => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>CUSTOM CHORE</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={customChoreName}
-              onChangeText={setCustomChoreName}
-              placeholder="Chore name..."
-              placeholderTextColor={colors.textMuted}
-              autoFocus
-            />
-            <TextInput
-              style={styles.modalInput}
-              value={customXP}
-              onChangeText={setCustomXP}
-              placeholder="XP value (e.g. 15)"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="number-pad"
-            />
-            <TouchableOpacity style={styles.modalSaveBtn} onPress={handleAddCustomChore}>
-              <Text style={styles.modalSaveBtnText}>ADD CHORE</Text>
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowAddChore(false)}>
+            <Pressable style={styles.modalSheet} onPress={e => e.stopPropagation()}>
+              <Text style={styles.modalTitle}>CUSTOM CHORE</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={customChoreName}
+                onChangeText={setCustomChoreName}
+                placeholder="Chore name..."
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+              <TextInput
+                style={styles.modalInput}
+                value={customXP}
+                onChangeText={setCustomXP}
+                placeholder="XP value (e.g. 15)"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="number-pad"
+              />
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleAddCustomChore}>
+                <Text style={styles.modalSaveBtnText}>ADD CHORE</Text>
+              </TouchableOpacity>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
     </View>
