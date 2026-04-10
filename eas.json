@@ -13,9 +13,7 @@
     },
     "production": {
       "autoIncrement": true,
-      "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
-      }
+      "image": "macos-ventura-13.6-xcode-15.2"
     }
   },
   "submit": {
