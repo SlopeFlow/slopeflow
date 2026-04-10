@@ -14,7 +14,7 @@
 		96905EF65AED1B983A6B3ABC /* libPods-SlopeFlow.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-SlopeFlow.a */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		FB6AA6E34FF74F55927CA61F /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EDBDAAE25E9444BB9DAD173 /* noop-file.swift */; };
+		1709232772BC4CF6B498D91E /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D1128218F54C1AA9E81110 /* noop-file.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,8 +31,8 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SlopeFlow/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		7EDBDAAE25E9444BB9DAD173 /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "SlopeFlow/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
-		16431C096E484EC19E00FDC7 /* SlopeFlow-Bridging-Header.h */ = {isa = PBXFileReference; name = "SlopeFlow-Bridging-Header.h"; path = "SlopeFlow/SlopeFlow-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
+		19D1128218F54C1AA9E81110 /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "SlopeFlow/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		7A277493EBB34BD1B19A3F39 /* SlopeFlow-Bridging-Header.h */ = {isa = PBXFileReference; name = "SlopeFlow-Bridging-Header.h"; path = "SlopeFlow/SlopeFlow-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,8 +57,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				7EDBDAAE25E9444BB9DAD173 /* noop-file.swift */,
-				16431C096E484EC19E00FDC7 /* SlopeFlow-Bridging-Header.h */,
+				19D1128218F54C1AA9E81110 /* noop-file.swift */,
+				7A277493EBB34BD1B19A3F39 /* SlopeFlow-Bridging-Header.h */,
 			);
 			name = SlopeFlow;
 			sourceTree = "<group>";
@@ -198,7 +198,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				172ED1301A4D48DD89DFA212 /* SlopeFlow-Bridging-Header.h in Resources */,
+				EEBCAFAE48B54375A4C5B981 /* SlopeFlow-Bridging-Header.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,7 +274,7 @@
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
-				FB6AA6E34FF74F55927CA61F /* noop-file.swift in Sources */,
+				1709232772BC4CF6B498D91E /* noop-file.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
