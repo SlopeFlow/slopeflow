@@ -1,5 +1,10 @@
 {
   "expo": {
+    "sdkVersion": "54.0.0",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/d561dbcd-a615-4c1b-8b00-fbba8404f9b6"
+    },
     "name": "SlopeFlow",
     "slug": "slopeflow",
     "extra": {
