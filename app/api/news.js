@@ -1,12 +1,9 @@
-// Signal Feed API — curated crypto + finance news
-// Sources: CoinGecko trending + free RSS feeds (no API key needed)
 // Noise filter: removes influencer/shill content, keeps signal
 
 // Trusted RSS sources — high signal, low noise
 const RSS_SOURCES = [
   { url: 'https://feeds.feedburner.com/CoinDesk', name: 'CoinDesk' },
   { url: 'https://cointelegraph.com/rss', name: 'CoinTelegraph' },
-  { url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', name: 'CoinDesk Markets' },
 ];
 
 // Noise keywords — filter these out
@@ -73,9 +70,17 @@ export async function getSignalFeed() {
   const rssFeeds = await Promise.all(RSS_SOURCES.map(fetchRSS));
 
   const all = rssFeeds.flat();
+  // Deduplicate by title (handles same story from multiple sources)
+  const seen = new Set();
+  const deduped = all.filter(a => {
+    const key = a.title?.trim().toLowerCase().slice(0, 60);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   // Filter noise, score, sort
-  const filtered = all
+  const filtered = deduped
     .filter(a => scoreArticle(a.title, a.description) > -1)
     .map(a => ({
       ...a,
@@ -90,9 +95,12 @@ export async function getSignalFeed() {
 
 // Time ago helper
 export function timeAgo(date) {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'recently';
+  const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (seconds < 0)    return 'just now';
   if (seconds < 60)   return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
-}
+}}

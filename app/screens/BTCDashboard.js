@@ -66,8 +66,10 @@ export default function BTCDashboard() {
       }
 
       // Build gifted-charts format: { value, label? }
-      const sampled = downsample(raw);
-      const first   = sampled[0]?.price ?? 0;
+      const sampled = downsample(raw.length > 1 ? raw : []);
+      if (sampled.length === 0) { setChartData([]); setLoading(false); 
+setRefreshing(false); return; }
+	const first   = sampled[0]?.price ?? 0;
       const last    = sampled[sampled.length - 1]?.price ?? 0;
       setChartColor(last >= first ? colors.green : colors.red);
 
