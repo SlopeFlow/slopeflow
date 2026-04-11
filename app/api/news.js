@@ -6,7 +6,6 @@
 const RSS_SOURCES = [
   { url: 'https://feeds.feedburner.com/CoinDesk', name: 'CoinDesk' },
   { url: 'https://cointelegraph.com/rss', name: 'CoinTelegraph' },
-  { url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', name: 'CoinDesk Markets' },
 ];
 
 // Noise keywords — filter these out
@@ -90,7 +89,7 @@ export async function getSignalFeed() {
 
 // Time ago helper
 export function timeAgo(date) {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  const d = new Date(date); if (isNaN(d.getTime())) return 'recently'; const seconds = Math.floor((Date.now() - d.getTime()) / 1000); if (seconds < 0) return 'just now';
   if (seconds < 60)   return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
