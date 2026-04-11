@@ -17,7 +17,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.bellistics.slopeflow",
       "buildNumber": "22",
-      "runtimeVersion": "1.0.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
