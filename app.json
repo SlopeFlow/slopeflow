@@ -12,7 +12,7 @@
         "projectId": "d561dbcd-a615-4c1b-8b00-fbba8404f9b6"
       }
     },
-    "version": "0.1.1",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -22,11 +22,14 @@
       "backgroundColor": "#0D0D0D"
     },
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.bellistics.slopeflow",
-      "buildNumber": "1",
-      "runtimeVersion": "1.0.0"
-    },
+  "supportsTablet": false,
+  "bundleIdentifier": "com.bellistics.slopeflow",
+  "buildNumber": "1",
+  "runtimeVersion": "1.0.0",
+  "infoPlist": {
+    "ITSAppUsesNonExemptEncryption": false
+  }
+},
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0D0D0D"
