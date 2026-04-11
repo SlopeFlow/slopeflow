@@ -12,7 +12,7 @@
         "projectId": "d561dbcd-a615-4c1b-8b00-fbba8404f9b6"
       }
     },
-    "version": "1.0.1",
+    "version": "0.1.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -24,7 +24,7 @@
     "ios": {
   "supportsTablet": false,
   "bundleIdentifier": "com.bellistics.slopeflow",
-  "buildNumber": "1",
+  "buildNumber": "22",
   "runtimeVersion": "1.0.0",
   "infoPlist": {
     "ITSAppUsesNonExemptEncryption": false
