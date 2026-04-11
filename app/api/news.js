@@ -1,19 +1,15 @@
-// Noise filter: removes influencer/shill content, keeps signal
-
-// Trusted RSS sources — high signal, low noise
+// Signal Feed API — curated crypto + finance news
 const RSS_SOURCES = [
   { url: 'https://feeds.feedburner.com/CoinDesk', name: 'CoinDesk' },
   { url: 'https://cointelegraph.com/rss', name: 'CoinTelegraph' },
 ];
 
-// Noise keywords — filter these out
 const NOISE_KEYWORDS = [
   'sponsored', 'advertisement', 'press release', 'partner content',
   '100x', 'moonshot', 'gem', 'airdrop', 'giveaway', 'guaranteed',
   'get rich', 'pump', 'shitcoin', 'meme coin', 'rug pull',
 ];
 
-// Signal keywords — boost these
 const SIGNAL_KEYWORDS = [
   'bitcoin', 'btc', 'fed', 'inflation', 'cpi', 'interest rate',
   'halving', 'etf', 'institutional', 'sec', 'regulation',
@@ -21,7 +17,6 @@ const SIGNAL_KEYWORDS = [
   'earnings', 'dividend', 'macro',
 ];
 
-// Tag classifier
 function classifyArticle(title, description = '') {
   const text = (title + ' ' + description).toLowerCase();
   if (text.includes('bitcoin') || text.includes('btc')) return { tag: '₿ BTC', color: '#00E5FF' };
@@ -32,7 +27,6 @@ function classifyArticle(title, description = '') {
   return { tag: '📰 NEWS', color: '#9E9E9E' };
 }
 
-// Score article for signal quality (higher = better)
 function scoreArticle(title, description = '') {
   const text = (title + ' ' + description).toLowerCase();
   let score = 0;
@@ -41,9 +35,6 @@ function scoreArticle(title, description = '') {
   return score;
 }
 
-// CoinGecko news endpoint removed — using RSS only
-
-// Parse RSS via rss2json proxy (no backend needed)
 async function fetchRSS(source) {
   try {
     const encoded = encodeURIComponent(source.url);
@@ -65,12 +56,10 @@ async function fetchRSS(source) {
   }
 }
 
-// Main feed fetch — combines sources, filters noise, ranks by signal
 export async function getSignalFeed() {
   const rssFeeds = await Promise.all(RSS_SOURCES.map(fetchRSS));
-
   const all = rssFeeds.flat();
-  // Deduplicate by title (handles same story from multiple sources)
+
   const seen = new Set();
   const deduped = all.filter(a => {
     const key = a.title?.trim().toLowerCase().slice(0, 60);
@@ -79,7 +68,6 @@ export async function getSignalFeed() {
     return true;
   });
 
-  // Filter noise, score, sort
   const filtered = deduped
     .filter(a => scoreArticle(a.title, a.description) > -1)
     .map(a => ({
@@ -88,19 +76,18 @@ export async function getSignalFeed() {
       ...classifyArticle(a.title, a.description),
     }))
     .sort((a, b) => b.score - a.score || b.publishedAt - a.publishedAt)
-    .slice(0, 25); // top 25 stories
+    .slice(0, 25);
 
   return filtered;
 }
 
-// Time ago helper
 export function timeAgo(date) {
   const d = new Date(date);
   if (isNaN(d.getTime())) return 'recently';
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (seconds < 0)    return 'just now';
-  if (seconds < 60)   return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 0)     return 'just now';
+  if (seconds < 60)    return `${seconds}s ago`;
+  if (seconds < 3600)  return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
-}}
+}
