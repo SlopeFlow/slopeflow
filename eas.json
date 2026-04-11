@@ -16,7 +16,6 @@
     "production": {
       "autoIncrement": true,
       "channel": "production",
-      "image": "macos-ventura-13.6-xcode-15.2"
     }
   },
   "submit": {
