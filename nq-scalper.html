@@ -7,12 +7,11 @@ h2 { color: #00e5ff; }
 p { color: #aaa; }
 pre { background: #111; padding: 20px; border: 1px solid #333; border-radius: 6px; overflow-x: auto; white-space: pre; font-size: 13px; line-height: 1.5; }
 button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; margin-bottom: 16px; font-weight: bold; }
-button:hover { background: #00bcd4; }
 </style>
 </head>
 <body>
 <h2>NQ Scalper Pro | Newsie</h2>
-<p>Click the button to copy, then paste into TradingView Pine Editor.</p>
+<p>Tap Copy, then paste into TradingView Pine Editor (new blank script).</p>
 <button onclick="copyScript()">Copy Script</button>
 <pre id="code">//@version=6
 indicator("NQ Scalper Pro | Newsie", overlay=true, max_bars_back=500)
@@ -24,41 +23,48 @@ session1_end    = input.int(11, "Morning close hour ET",   group="Session Filter
 session2_start  = input.int(13, "Afternoon open hour ET",  group="Session Filter")
 session2_end    = input.int(15, "Afternoon close hour ET", group="Session Filter")
 
+// INPUTS - EMA
 ema_fast = input.int(9,  "Fast EMA", group="EMA Ribbon")
 ema_slow = input.int(21, "Slow EMA", group="EMA Ribbon")
 
+// INPUTS - VWAP
 show_vwap_bands = input.bool(true, "Show VWAP Bands",   group="VWAP")
 vwap_mult1      = input.float(1.0, "Band 1 Multiplier", group="VWAP")
 vwap_mult2      = input.float(2.0, "Band 2 Multiplier", group="VWAP")
 
+// INPUTS - Opening Range
 or_minutes = input.int(15, "Opening Range minutes", group="Opening Range", minval=5, maxval=60)
 
-vol_ma_len = input.int(20,    "Volume MA Length",        group="Volume")
-vol_mult   = input.float(1.5, "Volume Spike Multiplier", group="Volume")
+// INPUTS - Volume
+vol_ma_len = input.int(20,   "Volume MA Length",        group="Volume")
+vol_mult   = input.float(1.5,"Volume Spike Multiplier", group="Volume")
 
-atr_len    = input.int(14,    "ATR Length",        group="ATR Risk")
-atr_stop   = input.float(1.5, "Stop Loss ATR x",   group="ATR Risk")
-atr_target = input.float(2.5, "Take Profit ATR x", group="ATR Risk")
+// INPUTS - ATR Risk
+atr_len    = input.int(14,   "ATR Length",          group="ATR Risk")
+atr_stop   = input.float(1.5,"Stop Loss ATR x",     group="ATR Risk")
+atr_target = input.float(2.5,"Take Profit ATR x",   group="ATR Risk")
 
-rsi_len = input.int(14, "RSI Length", group="RSI Filter")
-rsi_ob  = input.int(70, "Overbought", group="RSI Filter")
-rsi_os  = input.int(30, "Oversold",   group="RSI Filter")
+// INPUTS - RSI
+rsi_len = input.int(14, "RSI Length",  group="RSI Filter")
+rsi_ob  = input.int(70, "Overbought",  group="RSI Filter")
+rsi_os  = input.int(30, "Oversold",    group="RSI Filter")
 
 // SESSION
 et_hour      = hour(time, "America/New_York")
-in_morning   = et_hour >= session1_start and et_hour < session1_end
-in_afternoon = et_hour >= session2_start and et_hour < session2_end
+in_morning   = et_hour &gt;= session1_start and et_hour &lt; session1_end
+in_afternoon = et_hour &gt;= session2_start and et_hour &lt; session2_end
 in_session   = not session_filter or (in_morning or in_afternoon)
 
 // EMA RIBBON
 ema9  = ta.ema(close, ema_fast)
 ema21 = ta.ema(close, ema_slow)
-bull_ribbon = ema9 > ema21
-bear_ribbon = ema9 < ema21
+bull_ribbon = ema9 &gt; ema21
+bear_ribbon = ema9 &lt; ema21
 
-plot(ema9,  "EMA 9",  color=bull_ribbon ? color.new(color.aqua, 0) : color.new(color.red, 0), linewidth=1)
+plot(ema9,  "EMA 9",  color=bull_ribbon ? color.new(color.aqua, 0)  : color.new(color.red, 0),  linewidth=1)
 plot(ema21, "EMA 21", color=bull_ribbon ? color.new(color.teal, 30) : color.new(color.red, 30), linewidth=2)
-fill(plot(ema9, display=display.none), plot(ema21, display=display.none), color=bull_ribbon ? color.new(color.teal, 85) : color.new(color.red, 85))
+fill(plot(ema9,  display=display.none), plot(ema21, display=display.none),
+     color=bull_ribbon ? color.new(color.teal, 85) : color.new(color.red, 85))
 
 // VWAP
 [vwap_val, _, _] = ta.vwap(hlc3, false, 1)
@@ -71,15 +77,15 @@ vwap_lower2 = vwap_val - vwap_mult2 * stdev
 plot(vwap_val, "VWAP", color=color.new(color.yellow, 0), linewidth=2)
 plot(show_vwap_bands ? vwap_upper1 : na, "VWAP +1s", color=color.new(color.green, 50), linewidth=1)
 plot(show_vwap_bands ? vwap_upper2 : na, "VWAP +2s", color=color.new(color.green, 20), linewidth=1)
-plot(show_vwap_bands ? vwap_lower1 : na, "VWAP -1s", color=color.new(color.red, 50), linewidth=1)
-plot(show_vwap_bands ? vwap_lower2 : na, "VWAP -2s", color=color.new(color.red, 20), linewidth=1)
+plot(show_vwap_bands ? vwap_lower1 : na, "VWAP -1s", color=color.new(color.red,   50), linewidth=1)
+plot(show_vwap_bands ? vwap_lower2 : na, "VWAP -2s", color=color.new(color.red,   20), linewidth=1)
 
 // OPENING RANGE
 et_min       = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
 rth_open_min = 9 * 60 + 30
 or_close_min = rth_open_min + or_minutes
 is_rth_open  = et_min == rth_open_min
-in_or_window = et_min >= rth_open_min and et_min < or_close_min
+in_or_window = et_min &gt;= rth_open_min and et_min &lt; or_close_min
 or_just_done = et_min == or_close_min
 
 var float or_high = na
@@ -92,7 +98,7 @@ if is_rth_open
     or_set  := false
 else if in_or_window and not or_set
     or_high := math.max(or_high, high)
-    or_low  := math.min(or_low, low)
+    or_low  := math.min(or_low,  low)
 else if or_just_done and not or_set
     or_set  := true
 
@@ -101,33 +107,37 @@ plot(or_set ? or_low  : na, "OR Low",  color=color.new(color.orange, 0), linewid
 
 // VOLUME + RSI + ATR
 vol_ma    = ta.sma(volume, vol_ma_len)
-vol_spike = volume > vol_ma * vol_mult
+vol_spike = volume &gt; vol_ma * vol_mult
 barcolor(vol_spike ? color.new(color.yellow, 60) : na)
 
 rsi          = ta.rsi(close, rsi_len)
-rsi_ok_long  = rsi < rsi_ob
-rsi_ok_short = rsi > rsi_os
+rsi_ok_long  = rsi &lt; rsi_ob
+rsi_ok_short = rsi &gt; rsi_os
 atr          = ta.atr(atr_len)
 
 // SIGNALS
-vwap_reclaim_long  = ta.crossover(close, vwap_val) and bull_ribbon and vol_spike and rsi_ok_long and in_session
+vwap_reclaim_long  = ta.crossover(close,  vwap_val) and bull_ribbon and vol_spike and rsi_ok_long  and in_session
 vwap_reject_short  = ta.crossunder(close, vwap_val) and bear_ribbon and vol_spike and rsi_ok_short and in_session
-or_breakout_long   = or_set and ta.crossover(close, or_high) and bull_ribbon and vol_spike and in_session
-or_breakout_short  = or_set and ta.crossunder(close, or_low) and bear_ribbon and vol_spike and in_session
-ema_pullback_long  = bull_ribbon and low <= ema9 and close > ema9 and close > close[1] and vol_spike and rsi_ok_long and in_session
-ema_pullback_short = bear_ribbon and high >= ema9 and close < ema9 and close < close[1] and vol_spike and rsi_ok_short and in_session
+cross_or_high      = ta.crossover(close, or_high)
+cross_or_low       = ta.crossunder(close, or_low)
+or_breakout_long   = or_set and cross_or_high and bull_ribbon and vol_spike and in_session
+or_breakout_short  = or_set and cross_or_low and bear_ribbon and vol_spike and in_session
+ema_pullback_long  = bull_ribbon and low  &lt;= ema9 and close &gt; ema9 and close &gt; close[1] and vol_spike and rsi_ok_long  and in_session
+ema_pullback_short = bear_ribbon and high &gt;= ema9 and close &lt; ema9 and close &lt; close[1] and vol_spike and rsi_ok_short and in_session
 
-long_signal  = vwap_reclaim_long or or_breakout_long or ema_pullback_long
-short_signal = vwap_reject_short or or_breakout_short or ema_pullback_short
+long_signal  = vwap_reclaim_long  or or_breakout_long  or ema_pullback_long
+short_signal = vwap_reject_short  or or_breakout_short or ema_pullback_short
 
 // LABELS
 if long_signal
     lbl = vwap_reclaim_long ? "VWAP LONG" : or_breakout_long ? "ORB LONG" : "EMA LONG"
-    label.new(bar_index, low - atr * 0.5, lbl, style=label.style_label_up, color=color.new(color.lime, 10), textcolor=color.black, size=size.small)
+    label.new(bar_index, low - atr * 0.5, lbl, style=label.style_label_up,
+              color=color.new(color.lime, 10), textcolor=color.black, size=size.small)
 
 if short_signal
     lbl = vwap_reject_short ? "VWAP SHORT" : or_breakout_short ? "ORB SHORT" : "EMA SHORT"
-    label.new(bar_index, high + atr * 0.5, lbl, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.small)
+    label.new(bar_index, high + atr * 0.5, lbl, style=label.style_label_down,
+              color=color.new(color.red, 10), textcolor=color.white, size=size.small)
 
 // STOP / TARGET LINES
 var line sl_line = na
@@ -136,13 +146,13 @@ var line tp_line = na
 if long_signal
     line.delete(sl_line)
     line.delete(tp_line)
-    sl_line := line.new(bar_index, close - atr * atr_stop, bar_index + 20, close - atr * atr_stop, color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close - atr * atr_stop,   bar_index + 20, close - atr * atr_stop,   color=color.new(color.red,  20), width=1, style=line.style_dashed)
     tp_line := line.new(bar_index, close + atr * atr_target, bar_index + 20, close + atr * atr_target, color=color.new(color.lime, 20), width=1, style=line.style_dashed)
 
 if short_signal
     line.delete(sl_line)
     line.delete(tp_line)
-    sl_line := line.new(bar_index, close + atr * atr_stop, bar_index + 20, close + atr * atr_stop, color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close + atr * atr_stop,   bar_index + 20, close + atr * atr_stop,   color=color.new(color.red,  20), width=1, style=line.style_dashed)
     tp_line := line.new(bar_index, close - atr * atr_target, bar_index + 20, close - atr * atr_target, color=color.new(color.lime, 20), width=1, style=line.style_dashed)
 
 // ALERTS
@@ -151,13 +161,14 @@ alertcondition(short_signal,       "NQ SHORT Signal",   "NQ Scalper: SHORT signa
 alertcondition(vwap_reclaim_long,  "VWAP Reclaim LONG", "VWAP Reclaim Long NQ")
 alertcondition(vwap_reject_short,  "VWAP Reject SHORT", "VWAP Reject Short NQ")
 alertcondition(or_breakout_long,   "ORB LONG",          "Opening Range Breakout LONG NQ")
-alertcondition(or_breakout_short,  "ORB SHORT",         "Opening Range Breakout SHORT NQ")</pre>
+alertcondition(or_breakout_short,  "ORB SHORT",         "Opening Range Breakout SHORT NQ")
+</pre>
 <script>
 function copyScript() {
-    var text = document.getElementById('code').innerText;
+    var text = document.getElementById("code").innerText;
     navigator.clipboard.writeText(text).then(function() {
-        document.querySelector('button').innerText = 'Copied!';
-        setTimeout(function(){ document.querySelector('button').innerText = 'Copy Script'; }, 2000);
+        document.querySelector("button").innerText = "Copied!";
+        setTimeout(function(){ document.querySelector("button").innerText = "Copy Script"; }, 2000);
     });
 }
 </script>
