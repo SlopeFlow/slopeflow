@@ -10,8 +10,8 @@ button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; fon
 </style>
 </head>
 <body>
-<h2>NQ Scalper Pro | Newsie</h2>
-<p>Tap Copy, then paste into TradingView Pine Editor (new blank script).</p>
+<h2>NQ Scalper Pro | Newsie v4</h2>
+<p>Fixes: signal cooldown (no more clusters) + OR box daily reset. Tap Copy, paste into a fresh Pine Editor.</p>
 <button onclick="copyScript()">Copy Script</button>
 <pre id="code">//@version=6
 indicator("NQ Scalper Pro | Newsie", overlay=true, max_bars_back=500)
@@ -23,37 +23,37 @@ session1_end    = input.int(11, "Morning close hour ET",   group="Session Filter
 session2_start  = input.int(13, "Afternoon open hour ET",  group="Session Filter")
 session2_end    = input.int(15, "Afternoon close hour ET", group="Session Filter")
 
-// INPUTS - EMA
 ema_fast = input.int(9,  "Fast EMA", group="EMA Ribbon")
 ema_slow = input.int(21, "Slow EMA", group="EMA Ribbon")
 
-// INPUTS - VWAP
 show_vwap_bands = input.bool(true, "Show VWAP Bands",   group="VWAP")
 vwap_mult1      = input.float(1.0, "Band 1 Multiplier", group="VWAP")
 vwap_mult2      = input.float(2.0, "Band 2 Multiplier", group="VWAP")
 
-// INPUTS - Opening Range
 or_minutes = input.int(15, "Opening Range minutes", group="Opening Range", minval=5, maxval=60)
 
-// INPUTS - Volume
-vol_ma_len = input.int(20,   "Volume MA Length",        group="Volume")
-vol_mult   = input.float(1.5,"Volume Spike Multiplier", group="Volume")
+vol_ma_len = input.int(20,    "Volume MA Length",        group="Volume")
+vol_mult   = input.float(1.5, "Volume Spike Multiplier", group="Volume")
 
-// INPUTS - ATR Risk
-atr_len    = input.int(14,   "ATR Length",          group="ATR Risk")
-atr_stop   = input.float(1.5,"Stop Loss ATR x",     group="ATR Risk")
-atr_target = input.float(2.5,"Take Profit ATR x",   group="ATR Risk")
+atr_len    = input.int(14,    "ATR Length",        group="ATR Risk")
+atr_stop   = input.float(1.5, "Stop Loss ATR x",   group="ATR Risk")
+atr_target = input.float(2.5, "Take Profit ATR x", group="ATR Risk")
 
-// INPUTS - RSI
-rsi_len = input.int(14, "RSI Length",  group="RSI Filter")
-rsi_ob  = input.int(70, "Overbought",  group="RSI Filter")
-rsi_os  = input.int(30, "Oversold",    group="RSI Filter")
+rsi_len = input.int(14, "RSI Length", group="RSI Filter")
+rsi_ob  = input.int(70, "Overbought", group="RSI Filter")
+rsi_os  = input.int(30, "Oversold",   group="RSI Filter")
+
+cooldown_bars = input.int(5, "Signal Cooldown Bars", group="Signal Filter", minval=1, maxval=20)
 
 // SESSION
 et_hour      = hour(time, "America/New_York")
+et_min_full  = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
 in_morning   = et_hour &gt;= session1_start and et_hour &lt; session1_end
 in_afternoon = et_hour &gt;= session2_start and et_hour &lt; session2_end
 in_session   = not session_filter or (in_morning or in_afternoon)
+
+// DAY CHANGE
+new_day = ta.change(dayofmonth(time, "America/New_York")) != 0
 
 // EMA RIBBON
 ema9  = ta.ema(close, ema_fast)
@@ -61,10 +61,9 @@ ema21 = ta.ema(close, ema_slow)
 bull_ribbon = ema9 &gt; ema21
 bear_ribbon = ema9 &lt; ema21
 
-plot(ema9,  "EMA 9",  color=bull_ribbon ? color.new(color.aqua, 0)  : color.new(color.red, 0),  linewidth=1)
+plot(ema9,  "EMA 9",  color=bull_ribbon ? color.new(color.aqua, 0) : color.new(color.red, 0), linewidth=1)
 plot(ema21, "EMA 21", color=bull_ribbon ? color.new(color.teal, 30) : color.new(color.red, 30), linewidth=2)
-fill(plot(ema9,  display=display.none), plot(ema21, display=display.none),
-     color=bull_ribbon ? color.new(color.teal, 85) : color.new(color.red, 85))
+fill(plot(ema9, display=display.none), plot(ema21, display=display.none), color=bull_ribbon ? color.new(color.teal, 85) : color.new(color.red, 85))
 
 // VWAP
 [vwap_val, _, _] = ta.vwap(hlc3, false, 1)
@@ -77,20 +76,24 @@ vwap_lower2 = vwap_val - vwap_mult2 * stdev
 plot(vwap_val, "VWAP", color=color.new(color.yellow, 0), linewidth=2)
 plot(show_vwap_bands ? vwap_upper1 : na, "VWAP +1s", color=color.new(color.green, 50), linewidth=1)
 plot(show_vwap_bands ? vwap_upper2 : na, "VWAP +2s", color=color.new(color.green, 20), linewidth=1)
-plot(show_vwap_bands ? vwap_lower1 : na, "VWAP -1s", color=color.new(color.red,   50), linewidth=1)
-plot(show_vwap_bands ? vwap_lower2 : na, "VWAP -2s", color=color.new(color.red,   20), linewidth=1)
+plot(show_vwap_bands ? vwap_lower1 : na, "VWAP -1s", color=color.new(color.red, 50), linewidth=1)
+plot(show_vwap_bands ? vwap_lower2 : na, "VWAP -2s", color=color.new(color.red, 20), linewidth=1)
 
-// OPENING RANGE
-et_min       = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+// OPENING RANGE - resets each day
 rth_open_min = 9 * 60 + 30
 or_close_min = rth_open_min + or_minutes
-is_rth_open  = et_min == rth_open_min
-in_or_window = et_min &gt;= rth_open_min and et_min &lt; or_close_min
-or_just_done = et_min == or_close_min
+is_rth_open  = et_min_full == rth_open_min
+in_or_window = et_min_full &gt;= rth_open_min and et_min_full &lt; or_close_min
+or_just_done = et_min_full == or_close_min
 
 var float or_high = na
 var float or_low  = na
 var bool  or_set  = false
+
+if new_day
+    or_high := na
+    or_low  := na
+    or_set  := false
 
 if is_rth_open
     or_high := high
@@ -98,7 +101,7 @@ if is_rth_open
     or_set  := false
 else if in_or_window and not or_set
     or_high := math.max(or_high, high)
-    or_low  := math.min(or_low,  low)
+    or_low  := math.min(or_low, low)
 else if or_just_done and not or_set
     or_set  := true
 
@@ -115,29 +118,41 @@ rsi_ok_long  = rsi &lt; rsi_ob
 rsi_ok_short = rsi &gt; rsi_os
 atr          = ta.atr(atr_len)
 
-// SIGNALS
-vwap_reclaim_long  = ta.crossover(close,  vwap_val) and bull_ribbon and vol_spike and rsi_ok_long  and in_session
-vwap_reject_short  = ta.crossunder(close, vwap_val) and bear_ribbon and vol_spike and rsi_ok_short and in_session
-cross_or_high      = ta.crossover(close, or_high)
-cross_or_low       = ta.crossunder(close, or_low)
+// PRE-COMPUTE CROSSOVERS
+cross_vwap_up   = ta.crossover(close, vwap_val)
+cross_vwap_dn   = ta.crossunder(close, vwap_val)
+cross_or_high   = ta.crossover(close, or_high)
+cross_or_low    = ta.crossunder(close, or_low)
+
+// RAW SIGNALS
+vwap_reclaim_long  = cross_vwap_up  and bull_ribbon and vol_spike and rsi_ok_long  and in_session
+vwap_reject_short  = cross_vwap_dn  and bear_ribbon and vol_spike and rsi_ok_short and in_session
 or_breakout_long   = or_set and cross_or_high and bull_ribbon and vol_spike and in_session
-or_breakout_short  = or_set and cross_or_low and bear_ribbon and vol_spike and in_session
-ema_pullback_long  = bull_ribbon and low  &lt;= ema9 and close &gt; ema9 and close &gt; close[1] and vol_spike and rsi_ok_long  and in_session
+or_breakout_short  = or_set and cross_or_low  and bear_ribbon and vol_spike and in_session
+ema_pullback_long  = bull_ribbon and low &lt;= ema9 and close &gt; ema9 and close &gt; close[1] and vol_spike and rsi_ok_long  and in_session
 ema_pullback_short = bear_ribbon and high &gt;= ema9 and close &lt; ema9 and close &lt; close[1] and vol_spike and rsi_ok_short and in_session
 
-long_signal  = vwap_reclaim_long  or or_breakout_long  or ema_pullback_long
-short_signal = vwap_reject_short  or or_breakout_short or ema_pullback_short
+raw_long  = vwap_reclaim_long or or_breakout_long or ema_pullback_long
+raw_short = vwap_reject_short or or_breakout_short or ema_pullback_short
+
+// COOLDOWN FILTER - prevent signal clusters
+var int last_signal_bar = -999
+
+on_cooldown   = (bar_index - last_signal_bar) &lt; cooldown_bars
+long_signal   = raw_long  and not on_cooldown
+short_signal  = raw_short and not on_cooldown
+
+if long_signal or short_signal
+    last_signal_bar := bar_index
 
 // LABELS
 if long_signal
     lbl = vwap_reclaim_long ? "VWAP LONG" : or_breakout_long ? "ORB LONG" : "EMA LONG"
-    label.new(bar_index, low - atr * 0.5, lbl, style=label.style_label_up,
-              color=color.new(color.lime, 10), textcolor=color.black, size=size.small)
+    label.new(bar_index, low - atr * 0.5, lbl, style=label.style_label_up, color=color.new(color.lime, 10), textcolor=color.black, size=size.small)
 
 if short_signal
     lbl = vwap_reject_short ? "VWAP SHORT" : or_breakout_short ? "ORB SHORT" : "EMA SHORT"
-    label.new(bar_index, high + atr * 0.5, lbl, style=label.style_label_down,
-              color=color.new(color.red, 10), textcolor=color.white, size=size.small)
+    label.new(bar_index, high + atr * 0.5, lbl, style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.small)
 
 // STOP / TARGET LINES
 var line sl_line = na
@@ -146,13 +161,13 @@ var line tp_line = na
 if long_signal
     line.delete(sl_line)
     line.delete(tp_line)
-    sl_line := line.new(bar_index, close - atr * atr_stop,   bar_index + 20, close - atr * atr_stop,   color=color.new(color.red,  20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close - atr * atr_stop, bar_index + 20, close - atr * atr_stop, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     tp_line := line.new(bar_index, close + atr * atr_target, bar_index + 20, close + atr * atr_target, color=color.new(color.lime, 20), width=1, style=line.style_dashed)
 
 if short_signal
     line.delete(sl_line)
     line.delete(tp_line)
-    sl_line := line.new(bar_index, close + atr * atr_stop,   bar_index + 20, close + atr * atr_stop,   color=color.new(color.red,  20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close + atr * atr_stop, bar_index + 20, close + atr * atr_stop, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     tp_line := line.new(bar_index, close - atr * atr_target, bar_index + 20, close - atr * atr_target, color=color.new(color.lime, 20), width=1, style=line.style_dashed)
 
 // ALERTS
