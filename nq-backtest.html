@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head><title>NQ Scalper Pro - Backtest Script</title>
+<style>
+body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
+h2 { color: #00e5ff; }
+p { color: #aaa; }
+pre { background: #111; padding: 20px; border: 1px solid #333; border-radius: 6px; overflow-x: auto; white-space: pre; font-size: 13px; line-height: 1.5; }
+button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; margin-bottom: 16px; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>NQ Scalper Pro | Backtest Strategy</h2>
+<p>Paste into a NEW Pine Editor script. Then open Strategy Tester tab at the bottom. Set chart to MNQ1! 5m, date range 6 months.</p>
+<button onclick="copyScript()">Copy Backtest Script</button>
+<pre id="code">//@version=6
+strategy("NQ Scalper Pro | Backtest", overlay=true, max_bars_back=500,
+         initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+         commission_type=strategy.commission.cash_per_contract, commission_value=2.05,
+         slippage=2)
+
+// INPUTS
+session_filter  = input.bool(true, "Only trade RTH sessions", group="Session Filter")
+session1_start  = input.int(9,  "Morning open hour ET",    group="Session Filter")
+session1_end    = input.int(11, "Morning close hour ET",   group="Session Filter")
+session2_start  = input.int(13, "Afternoon open hour ET",  group="Session Filter")
+session2_end    = input.int(15, "Afternoon close hour ET", group="Session Filter")
+
+ema_fast = input.int(9,  "Fast EMA", group="EMA Ribbon")
+ema_slow = input.int(21, "Slow EMA", group="EMA Ribbon")
+
+or_minutes = input.int(15, "Opening Range minutes", group="Opening Range", minval=5, maxval=60)
+
+vol_ma_len = input.int(20,    "Volume MA Length",        group="Volume")
+vol_mult   = input.float(1.5, "Volume Spike Multiplier", group="Volume")
+
+atr_len    = input.int(14,    "ATR Length",        group="ATR Risk")
+atr_stop   = input.float(1.5, "Stop Loss ATR x",   group="ATR Risk")
+atr_target = input.float(2.5, "Take Profit ATR x", group="ATR Risk")
+
+rsi_len = input.int(14, "RSI Length", group="RSI Filter")
+rsi_ob  = input.int(70, "Overbought", group="RSI Filter")
+rsi_os  = input.int(30, "Oversold",   group="RSI Filter")
+
+cooldown_bars = input.int(5, "Signal Cooldown Bars", group="Signal Filter", minval=1, maxval=20)
+
+max_daily_loss = input.float(500.0, "Max Daily Loss $", group="Risk Management")
+
+// SESSION
+et_hour     = hour(time, "America/New_York")
+et_min_full = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+in_morning   = et_hour &gt;= session1_start and et_hour &lt; session1_end
+in_afternoon = et_hour &gt;= session2_start and et_hour &lt; session2_end
+in_session   = not session_filter or (in_morning or in_afternoon)
+
+// DAY CHANGE
+new_day = ta.change(dayofmonth(time, "America/New_York")) != 0
+
+// DAILY LOSS TRACKER
+var float daily_pnl     = 0.0
+var float daily_start   = strategy.equity
+
+if new_day
+    daily_start := strategy.equity
+    daily_pnl   := 0.0
+else
+    daily_pnl := strategy.equity - daily_start
+
+under_daily_limit = daily_pnl &gt; -max_daily_loss
+
+// EMA RIBBON
+ema9  = ta.ema(close, ema_fast)
+ema21 = ta.ema(close, ema_slow)
+bull_ribbon = ema9 &gt; ema21
+bear_ribbon = ema9 &lt; ema21
+
+plot(ema9,  "EMA 9",  color=bull_ribbon ? color.new(color.aqua, 0) : color.new(color.red, 0), linewidth=1)
+plot(ema21, "EMA 21", color=bull_ribbon ? color.new(color.teal, 30) : color.new(color.red, 30), linewidth=2)
+
+// VWAP
+[vwap_val, _, _] = ta.vwap(hlc3, false, 1)
+stdev = ta.stdev(close, 20)
+plot(vwap_val, "VWAP", color=color.new(color.yellow, 0), linewidth=2)
+plot(vwap_val + stdev, "VWAP +1s", color=color.new(color.green, 50), linewidth=1)
+plot(vwap_val - stdev, "VWAP -1s", color=color.new(color.red, 50), linewidth=1)
+
+// OPENING RANGE
+rth_open_min = 9 * 60 + 30
+or_close_min = rth_open_min + or_minutes
+is_rth_open  = et_min_full == rth_open_min
+in_or_window = et_min_full &gt;= rth_open_min and et_min_full &lt; or_close_min
+or_just_done = et_min_full == or_close_min
+
+var float or_high = na
+var float or_low  = na
+var bool  or_set  = false
+
+if new_day
+    or_high := na
+    or_low  := na
+    or_set  := false
+
+if is_rth_open
+    or_high := high
+    or_low  := low
+    or_set  := false
+else if in_or_window and not or_set
+    or_high := math.max(or_high, high)
+    or_low  := math.min(or_low, low)
+else if or_just_done and not or_set
+    or_set  := true
+
+plot(or_set ? or_high : na, "OR High", color=color.new(color.orange, 0), linewidth=2, style=plot.style_stepline)
+plot(or_set ? or_low  : na, "OR Low",  color=color.new(color.orange, 0), linewidth=2, style=plot.style_stepline)
+
+// VOLUME + RSI + ATR
+vol_ma    = ta.sma(volume, vol_ma_len)
+vol_spike = volume &gt; vol_ma * vol_mult
+rsi          = ta.rsi(close, rsi_len)
+rsi_ok_long  = rsi &lt; rsi_ob
+rsi_ok_short = rsi &gt; rsi_os
+atr          = ta.atr(atr_len)
+
+// PRE-COMPUTE CROSSOVERS
+cross_vwap_up = ta.crossover(close, vwap_val)
+cross_vwap_dn = ta.crossunder(close, vwap_val)
+cross_or_high = ta.crossover(close, or_high)
+cross_or_low  = ta.crossunder(close, or_low)
+
+// RAW SIGNALS
+vwap_reclaim_long  = cross_vwap_up and bull_ribbon and vol_spike and rsi_ok_long  and in_session
+vwap_reject_short  = cross_vwap_dn and bear_ribbon and vol_spike and rsi_ok_short and in_session
+or_breakout_long   = or_set and cross_or_high and bull_ribbon and vol_spike and in_session
+or_breakout_short  = or_set and cross_or_low  and bear_ribbon and vol_spike and in_session
+ema_pullback_long  = bull_ribbon and low &lt;= ema9 and close &gt; ema9 and close &gt; close[1] and vol_spike and rsi_ok_long  and in_session
+ema_pullback_short = bear_ribbon and high &gt;= ema9 and close &lt; ema9 and close &lt; close[1] and vol_spike and rsi_ok_short and in_session
+
+raw_long  = vwap_reclaim_long or or_breakout_long or ema_pullback_long
+raw_short = vwap_reject_short or or_breakout_short or ema_pullback_short
+
+// COOLDOWN
+var int last_signal_bar = -999
+on_cooldown  = (bar_index - last_signal_bar) &lt; cooldown_bars
+long_signal  = raw_long  and not on_cooldown and under_daily_limit
+short_signal = raw_short and not on_cooldown and under_daily_limit
+
+if long_signal or short_signal
+    last_signal_bar := bar_index
+
+// ENTRIES &amp; EXITS
+if long_signal and strategy.position_size == 0
+    sl = close - atr * atr_stop
+    tp = close + atr * atr_target
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=sl, limit=tp)
+
+if short_signal and strategy.position_size == 0
+    sl = close + atr * atr_stop
+    tp = close - atr * atr_target
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=sl, limit=tp)
+
+// CLOSE at session end
+session_end = et_hour &gt;= 15 and et_min_full &gt;= 15 * 60
+if session_end and strategy.position_size != 0
+    strategy.close_all("Session End")
+</pre>
+<script>
+function copyScript() {
+    var text = document.getElementById("code").innerText;
+    navigator.clipboard.writeText(text).then(function() {
+        document.querySelector("button").innerText = "Copied!";
+        setTimeout(function(){ document.querySelector("button").innerText = "Copy Backtest Script"; }, 2000);
+    });
+}
+</script>
+</body>
+</html>
