@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head><title>ETH Reversion Backtest</title>
+<style>
+body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
+h2 { color: #00e5ff; }
+p,li { color: #aaa; line-height: 1.8; }
+pre { background: #111; padding: 20px; border: 1px solid #333; border-radius: 6px; overflow-x: auto; white-space: pre; font-size: 13px; line-height: 1.5; }
+button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; margin-bottom: 16px; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>ETH Open Reversion | Backtest Strategy</h2>
+<p>Paste into a NEW Pine Editor script. Open Strategy Tester tab. Run on MNQ1! 5m.</p>
+<button onclick="copyScript()">Copy Backtest Script</button>
+<pre id="code">//@version=6
+strategy("ETH Open Reversion | Backtest", overlay=true, max_bars_back=1000,
+         initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+         commission_type=strategy.commission.cash_per_contract, commission_value=2.05,
+         slippage=2)
+
+// ─── INPUTS ───────────────────────────────────────────
+ext_min  = input.float(40.0, "Min Extension (pts)",   group="Setup")
+ext_max  = input.float(80.0, "Max Extension (pts)",   group="Setup")
+wick_min = input.float(5.0,  "Min Wick Size (pts)",   group="Setup")
+stop_pts = input.float(10.0, "Stop Beyond Wick (pts)", group="Setup")
+tp1_pct  = input.float(0.50, "TP1 % back to ETH mid", group="Setup")
+tp2_pct  = input.float(0.75, "TP2 % back to ETH mid", group="Setup")
+
+// ─── ETH OPEN ─────────────────────────────────────────
+et_hour = hour(time, "America/New_York")
+et_min  = minute(time, "America/New_York")
+et_mins = et_hour * 60 + et_min
+
+is_eth_open = et_hour == 18 and et_min == 0
+new_day     = ta.change(dayofmonth(time, "America/New_York")) != 0
+
+var float eth_mid   = na
+var float day_high  = na
+var float day_low   = na
+var bool  setup_done = false
+
+if new_day
+    day_high   := na
+    day_low    := na
+    setup_done := false
+
+if is_eth_open
+    eth_mid    := (high + low) / 2
+    day_high   := high
+    day_low    := low
+    setup_done := false
+
+if not na(eth_mid) and not is_eth_open
+    day_high := math.max(day_high, high)
+    day_low  := math.min(day_low,  low)
+
+up_ext = not na(day_high) and not na(eth_mid) ? day_high - eth_mid : na
+dn_ext = not na(day_low)  and not na(eth_mid) ? eth_mid - day_low  : na
+
+// ─── DISPLAY ──────────────────────────────────────────
+plot(not na(eth_mid) ? eth_mid : na, "ETH Mid", color=color.new(color.white, 20), linewidth=2, style=plot.style_stepline)
+plot(not na(eth_mid) ? eth_mid + ext_min : na, "Min Ext Up", color=color.new(color.yellow, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(eth_mid) ? eth_mid + ext_max : na, "Max Ext Up", color=color.new(color.yellow, 20), linewidth=1, style=plot.style_stepline)
+plot(not na(eth_mid) ? eth_mid - ext_min : na, "Min Ext Dn", color=color.new(color.yellow, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(eth_mid) ? eth_mid - ext_max : na, "Max Ext Dn", color=color.new(color.yellow, 20), linewidth=1, style=plot.style_stepline)
+
+// ─── SIGNALS ──────────────────────────────────────────
+in_up_zone = not na(up_ext) and up_ext &gt;= ext_min and up_ext &lt;= ext_max and up_ext &gt; dn_ext * 1.3
+in_dn_zone = not na(dn_ext) and dn_ext &gt;= ext_min and dn_ext &lt;= ext_max and dn_ext &gt; up_ext * 1.3
+
+prev_top_wick = high[1] - math.max(open[1], close[1])
+prev_bot_wick = math.min(open[1], close[1]) - low[1]
+
+short_coc = prev_top_wick &gt;= wick_min and close &lt; low[1]
+long_coc  = prev_bot_wick &gt;= wick_min and close &gt; high[1]
+
+long_signal  = in_dn_zone and long_coc  and not setup_done and strategy.position_size == 0
+short_signal = in_up_zone and short_coc and not setup_done and strategy.position_size == 0
+
+if long_signal or short_signal
+    setup_done := true
+
+bgcolor(in_up_zone ? color.new(color.red, 92) : in_dn_zone ? color.new(color.lime, 92) : na)
+
+// ─── ENTRIES &amp; EXITS ──────────────────────────────────
+atr = ta.atr(14)
+
+if long_signal
+    tp1 = close + (eth_mid - close) * tp1_pct
+    tp2 = close + (eth_mid - close) * tp2_pct
+    sl  = day_low - stop_pts
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long TP1", "Long", limit=tp1, stop=sl, qty=1)
+
+if short_signal
+    tp1 = close - (close - eth_mid) * tp1_pct
+    tp2 = close - (close - eth_mid) * tp2_pct
+    sl  = day_high + stop_pts
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short TP1", "Short", limit=tp1, stop=sl, qty=1)
+
+// Close at end of session (22:00 ET — before next ETH open)
+if et_hour == 21 and et_min == 55 and strategy.position_size != 0
+    strategy.close_all("Session End")
+
+// Labels
+if long_signal
+    label.new(bar_index, low - atr*0.3, "ETH LONG\n" + str.tostring(math.round(dn_ext,1)) + "pt ext",
+              style=label.style_label_up, color=color.new(color.lime,10), textcolor=color.black, size=size.small)
+if short_signal
+    label.new(bar_index, high + atr*0.3, "ETH SHORT\n" + str.tostring(math.round(up_ext,1)) + "pt ext",
+              style=label.style_label_down, color=color.new(color.red,10), textcolor=color.white, size=size.small)
+
+alertcondition(long_signal,  "ETH LONG",  "ETH Reversion LONG")
+alertcondition(short_signal, "ETH SHORT", "ETH Reversion SHORT")
+</pre>
+<script>
+function copyScript() {
+    var text = document.getElementById("code").innerText;
+    navigator.clipboard.writeText(text).then(function() {
+        document.querySelector("button").innerText = "Copied!";
+        setTimeout(function(){ document.querySelector("button").innerText = "Copy Backtest Script"; }, 2000);
+    });
+}
+</script>
+</body>
+</html>
