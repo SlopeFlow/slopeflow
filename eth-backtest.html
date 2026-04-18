@@ -1,31 +1,24 @@
 <!DOCTYPE html>
-<html>
-<head><title>ETH Reversion Backtest v5</title>
+<html><head><title>ETH Reversion Backtest v6</title>
 <style>
 body{background:#1a1a1a;color:#e0e0e0;font-family:monospace;padding:20px}
 h2{color:#00e5ff}p,li{color:#aaa;line-height:1.8}
 pre{background:#111;padding:20px;border:1px solid #333;border-radius:6px;overflow-x:auto;white-space:pre;font-size:13px;line-height:1.5}
 button{background:#00e5ff;color:#000;border:none;padding:10px 24px;font-size:15px;border-radius:4px;cursor:pointer;margin-bottom:16px;font-weight:bold}
 </style></head><body>
-<h2>ETH Open Reversion | Backtest v5</h2>
-<p>Run on <b>MNQ1! 5m chart</b> — Strategy Tester tab.</p>
-<ul>
-<li>Hard prior session level sweep required before any signal</li>
-<li>Entry: bull/bear candle closes beyond 1-2 candle cluster after sweep</li>
-<li>TP1 = top of cluster | Stop = 10pts beyond sweep extreme</li>
-</ul>
-<button onclick="copyScript()">Copy Backtest v5</button>
+<h2>ETH Open Reversion | Backtest v6</h2>
+<p>Run on <b>MNQ1! 5m chart</b> - Strategy Tester tab.</p>
+<button onclick="copyScript()">Copy Backtest v6</button>
 <pre id="code">//@version=6
-strategy("ETH Open Reversion | Backtest v5", overlay=true, max_bars_back=1000,
+strategy("ETH Open Reversion | Backtest v6", overlay=true, max_bars_back=1000,
          initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
          commission_type=strategy.commission.cash_per_contract, commission_value=2.05,
          slippage=2)
 
 // INPUTS
-ext_min     = input.float(40.0, "Min Extension (pts)",         group="Setup")
-ext_max     = input.float(80.0, "Max Extension (pts)",         group="Setup")
-stop_pts    = input.float(10.0, "Stop Beyond Sweep Low (pts)", group="Setup")
-line_len    = input.int(60,     "TP line length (bars)",       group="Display")
+ext_min  = input.float(40.0, "Min Extension (pts)",     group="Setup")
+ext_max  = input.float(80.0, "Max Extension (pts)",     group="Setup")
+stop_pts = input.float(10.0, "Stop Beyond Sweep (pts)", group="Setup")
 
 // SESSION &amp; ETH OPEN
 et_hour = hour(time, "America/New_York")
@@ -66,60 +59,58 @@ dn_ext = not na(day_low)  and not na(eth_mid) ? eth_mid - day_low  : na
 in_up_zone = not na(up_ext) and up_ext &gt;= ext_min and up_ext &lt;= ext_max and up_ext &gt; dn_ext * 1.3
 in_dn_zone = not na(dn_ext) and dn_ext &gt;= ext_min and dn_ext &lt;= ext_max and dn_ext &gt; up_ext * 1.3
 
-// Hard sweep detection
 if not na(prev_sess_low)  and low  &lt;= prev_sess_low  and not swept_low_flag
     swept_low_flag  := true
 if not na(prev_sess_high) and high &gt;= prev_sess_high and not swept_high_flag
     swept_high_flag := true
 
-// Cluster detection (5m bars)
+// Candle direction (inline)
 bear1 = close[1] &lt; open[1]
 bear2 = close[2] &lt; open[2]
 bull1 = close[1] &gt; open[1]
 bull2 = close[2] &gt; open[2]
 
-cluster_bear_high = math.max(open[1], bear2 ? open[2] : open[1])
-cluster_bear_low  = math.min(low[1],  bear2 ? low[2]  : low[1])
-cluster_bear_range = cluster_bear_high - cluster_bear_low
+// Cluster
+c_high_long  = bear2 ? math.max(high[1], high[2]) : high[1]
+c_low_long   = bear2 ? math.min(low[1],  low[2])  : low[1]
+c_high_short = bull2 ? math.max(high[1], high[2]) : high[1]
+c_low_short  = bull2 ? math.min(low[1],  low[2])  : low[1]
 
-cluster_bull_low  = math.min(open[1],  bull2 ? open[2]  : open[1])
-cluster_bull_high = math.max(high[1],  bull2 ? high[2]  : high[1])
-cluster_bull_range = cluster_bull_high - cluster_bull_low
+lowest_is_b1      = low[1]  &lt;= low[2]
+highest_is_b1     = high[1] &gt;= high[2]
+valid_low_candle  = lowest_is_b1  ? bear1 : bear2
+valid_high_candle = highest_is_b1 ? bull1 : bull2
 
-// Entry conditions
-long_entry  = close &gt; open and close &gt; cluster_bear_high and bear1 and
-              swept_low_flag and in_dn_zone and not setup_done and strategy.position_size == 0
+bull_conf = close &gt; open and close &gt; c_high_long
+bear_conf = close &lt; open and close &lt; c_low_short
 
-short_entry = close &lt; open and close &lt; cluster_bull_low and bull1 and
-              swept_high_flag and in_up_zone and not setup_done and strategy.position_size == 0
+long_signal  = in_dn_zone and swept_low_flag  and bear1 and bull_conf and valid_low_candle  and not setup_done and strategy.position_size == 0
+short_signal = in_up_zone and swept_high_flag and bull1 and bear_conf and valid_high_candle and not setup_done and strategy.position_size == 0
 
-if long_entry or short_entry
+if long_signal or short_signal
     setup_done := true
+
+tp1_long  = not na(eth_mid) ? c_low_long  + (eth_mid - c_low_long)  * 0.5 : na
+tp1_short = not na(eth_mid) ? c_high_short - (c_high_short - eth_mid) * 0.5 : na
 
 // Display
 plot(not na(eth_mid)        ? eth_mid        : na, "ETH Mid",         color=color.new(color.aqua,   30), linewidth=1)
 plot(not na(prev_sess_high) ? prev_sess_high : na, "Prior Sess High", color=color.new(color.yellow, 20), linewidth=1)
 plot(not na(prev_sess_low)  ? prev_sess_low  : na, "Prior Sess Low",  color=color.new(color.yellow, 20), linewidth=1)
 
-plotshape(long_entry,  "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
-plotshape(short_entry, "Short", shape.triangledown,  location.abovebar, color=color.new(color.red,  0), size=size.normal)
+plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime,0), size=size.normal)
+plotshape(short_signal, "Short", shape.triangledown,  location.abovebar, color=color.new(color.red, 0), size=size.normal)
 
-// Entries &amp; exits
-atr = ta.atr(14)
-
-if long_entry
-    tp1 = cluster_bear_high
-    tp2 = cluster_bear_high + cluster_bear_range * 0.5
-    sl  = cluster_bear_low - stop_pts
+// Entries
+if long_signal
+    sl = c_low_long - stop_pts
     strategy.entry("Long", strategy.long)
-    strategy.exit("Long Exit", "Long", limit=tp1, stop=sl)
+    strategy.exit("Long Exit", "Long", limit=tp1_long, stop=sl)
 
-if short_entry
-    tp1 = cluster_bull_low
-    tp2 = cluster_bull_low - cluster_bull_range * 0.5
-    sl  = cluster_bull_high + stop_pts
+if short_signal
+    sl = c_high_short + stop_pts
     strategy.entry("Short", strategy.short)
-    strategy.exit("Short Exit", "Short", limit=tp1, stop=sl)
+    strategy.exit("Short Exit", "Short", limit=tp1_short, stop=sl)
 
 if et_hour == 21 and et_min == 55 and strategy.position_size != 0
     strategy.close_all("Session End")
@@ -128,7 +119,7 @@ if et_hour == 21 and et_min == 55 and strategy.position_size != 0
 function copyScript(){
     navigator.clipboard.writeText(document.getElementById("code").innerText).then(function(){
         document.querySelector("button").innerText="Copied!";
-        setTimeout(function(){document.querySelector("button").innerText="Copy Backtest v5"},2000);
+        setTimeout(function(){document.querySelector("button").innerText="Copy Backtest v6"},2000);
     });
 }
 </script></body></html>
