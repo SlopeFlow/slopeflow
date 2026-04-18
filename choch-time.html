@@ -89,14 +89,18 @@ long_valid  = long_choch  and not na(long_leg)  and long_leg  &gt;= min_leg
 var bool short_taken = false
 var bool long_taken  = false
 
-if bull_ph: short_taken := false
-if bear_pl: long_taken  := false
+if bull_ph
+    short_taken := false
+if bear_pl
+    long_taken  := false
 
 short_signal = short_valid and not short_taken
 long_signal  = long_valid  and not long_taken
 
-if short_signal: short_taken := true
-if long_signal:  long_taken  := true
+if short_signal
+    short_taken := true
+if long_signal
+    long_taken  := true
 
 // Entry levels (50% fib of leg)
 short_fib50 = short_signal ? high - short_leg * 0.5 : na
@@ -141,9 +145,12 @@ if long_signal
     sl_line  := line.new(bar_index, long_stop,  bar_index+line_len, long_stop,
                          color=color.new(color.red,  20), width=1, style=line.style_dashed)
     label.new(bar_index, low - atr*0.5,
-              "LONG " + zone_lbl + "\nEntry: " + str.tostring(math.round(long_fib50,0)) +
-              "\nTP2: "  + str.tostring(math.round(long_tp2,0)) +
-              "\nSL: "   + str.tostring(math.round(long_stop,0)),
+              "LONG " + zone_lbl + "
+Entry: " + str.tostring(math.round(long_fib50,0)) +
+              "
+TP2: "  + str.tostring(math.round(long_tp2,0)) +
+              "
+SL: "   + str.tostring(math.round(long_stop,0)),
               style=label.style_label_up, color=color.new(color.lime,5),
               textcolor=color.black, size=size.tiny)
 
@@ -161,9 +168,12 @@ if short_signal
     sl_line  := line.new(bar_index, short_stop,  bar_index+line_len, short_stop,
                          color=color.new(color.red,  20), width=1, style=line.style_dashed)
     label.new(bar_index, high + atr*0.5,
-              "SHORT " + zone_lbl + "\nEntry: " + str.tostring(math.round(short_fib50,0)) +
-              "\nTP2: "  + str.tostring(math.round(short_tp2,0)) +
-              "\nSL: "   + str.tostring(math.round(short_stop,0)),
+              "SHORT " + zone_lbl + "
+Entry: " + str.tostring(math.round(short_fib50,0)) +
+              "
+TP2: "  + str.tostring(math.round(short_tp2,0)) +
+              "
+SL: "   + str.tostring(math.round(short_stop,0)),
               style=label.style_label_down, color=color.new(color.red,5),
               textcolor=color.white, size=size.tiny)
 
