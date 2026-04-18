@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><title>ETH Reversion Backtest v2</title>
+<head><title>ETH Reversion 1m Backtest</title>
 <style>
 body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
 h2 { color: #00e5ff; }
@@ -10,32 +10,38 @@ button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; fon
 </style>
 </head>
 <body>
-<h2>ETH Open Reversion | Backtest v2</h2>
-<p>Fix: uses fixed point targets (20pt TP1, 40pt TP2, 10pt stop) instead of % distance to ETH mid.</p>
-<p>Load on MNQ1! 5m → Strategy Tester.</p>
-<button onclick="copyScript()">Copy Backtest v2</button>
+<h2>ETH Open Reversion | 1m Backtest</h2>
+<p>Run on <b>MNQ1! 1m chart</b> — Strategy Tester tab.</p>
+<ul>
+<li>1m CoC entry: wick 3pt+ on prev candle, next closes beyond it</li>
+<li>20pt TP1 | 10pt stop | 2:1 R:R</li>
+<li>Slippage reduced to 1 tick (more realistic on 1m)</li>
+</ul>
+<button onclick="copyScript()">Copy 1m Backtest</button>
 <pre id="code">//@version=6
-strategy("ETH Open Reversion | Backtest v2", overlay=true, max_bars_back=1000,
+strategy("ETH Open Reversion | 1m Backtest", overlay=true, max_bars_back=1000,
          initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
          commission_type=strategy.commission.cash_per_contract, commission_value=2.05,
-         slippage=2)
+         slippage=1)
 
+// INPUTS
 ext_min  = input.float(40.0, "Min Extension (pts)",    group="Setup")
 ext_max  = input.float(80.0, "Max Extension (pts)",    group="Setup")
-wick_min = input.float(5.0,  "Min Wick Size (pts)",    group="Setup")
+wick_min = input.float(3.0,  "Min Wick Size (pts)",    group="Setup")
 stop_pts = input.float(10.0, "Stop Loss (pts)",        group="Setup")
-tp1_pts  = input.float(20.0, "TP1 Fixed (pts)",        group="Setup")
-tp2_pts  = input.float(40.0, "TP2 Fixed (pts)",        group="Setup")
+tp1_pts  = input.float(20.0, "TP1 (pts)",              group="Setup")
+tp2_pts  = input.float(40.0, "TP2 (pts)",              group="Setup")
 
+// ETH OPEN — track on 1m chart
 et_hour = hour(time, "America/New_York")
 et_min  = minute(time, "America/New_York")
 
 is_eth_open = et_hour == 18 and et_min == 0
 new_day     = ta.change(dayofmonth(time, "America/New_York")) != 0
 
-var float eth_mid   = na
-var float day_high  = na
-var float day_low   = na
+var float eth_mid  = na
+var float day_high = na
+var float day_low  = na
 var bool  setup_done = false
 
 if new_day
@@ -56,18 +62,19 @@ if not na(eth_mid) and not is_eth_open
 up_ext = not na(day_high) and not na(eth_mid) ? day_high - eth_mid : na
 dn_ext = not na(day_low)  and not na(eth_mid) ? eth_mid - day_low  : na
 
-plot(not na(eth_mid) ? eth_mid : na, "ETH Mid", color=color.new(color.white, 20), linewidth=2, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid + ext_min : na, "40pt Up", color=color.new(color.yellow, 70), linewidth=1, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid + ext_max : na, "80pt Up", color=color.new(color.yellow, 50), linewidth=1, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid - ext_min : na, "40pt Dn", color=color.new(color.yellow, 70), linewidth=1, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid - ext_max : na, "80pt Dn", color=color.new(color.yellow, 50), linewidth=1, style=plot.style_stepline)
-
 in_up_zone = not na(up_ext) and up_ext &gt;= ext_min and up_ext &lt;= ext_max and up_ext &gt; dn_ext * 1.3
 in_dn_zone = not na(dn_ext) and dn_ext &gt;= ext_min and dn_ext &lt;= ext_max and dn_ext &gt; up_ext * 1.3
-bgcolor(in_up_zone ? color.new(color.red, 96) : in_dn_zone ? color.new(color.lime, 96) : na)
 
+// ETH MID
+plot(not na(eth_mid) ? eth_mid : na, "ETH Mid",
+     color=color.new(color.gray, 50), linewidth=1, style=plot.style_line)
+
+// 1m CoC:
+// SHORT: prev 1m candle has top wick &gt;= wick_min, current 1m closes below prev low
+// LONG:  prev 1m candle has bot wick &gt;= wick_min, current 1m closes above prev high
 prev_top_wick = high[1] - math.max(open[1], close[1])
 prev_bot_wick = math.min(open[1], close[1]) - low[1]
+
 short_coc = prev_top_wick &gt;= wick_min and close &lt; low[1]
 long_coc  = prev_bot_wick &gt;= wick_min and close &gt; high[1]
 
@@ -77,20 +84,20 @@ short_signal = in_up_zone and short_coc and not setup_done and strategy.position
 if long_signal or short_signal
     setup_done := true
 
-atr = ta.atr(14)
+// Arrows
+plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.small)
+plotshape(short_signal, "Short", shape.triangledown,  location.abovebar, color=color.new(color.red,  0), size=size.small)
 
+// Entries
 if long_signal
     strategy.entry("Long", strategy.long)
     strategy.exit("Long Exit", "Long", limit=close + tp1_pts, stop=close - stop_pts)
-    label.new(bar_index, low - atr*0.3, "ETH LONG " + str.tostring(math.round(dn_ext,0)) + "pt",
-              style=label.style_label_up, color=color.new(color.lime,5), textcolor=color.black, size=size.small)
 
 if short_signal
     strategy.entry("Short", strategy.short)
     strategy.exit("Short Exit", "Short", limit=close - tp1_pts, stop=close + stop_pts)
-    label.new(bar_index, high + atr*0.3, "ETH SHORT " + str.tostring(math.round(up_ext,0)) + "pt",
-              style=label.style_label_down, color=color.new(color.red,5), textcolor=color.white, size=size.small)
 
+// Close before next ETH open
 if et_hour == 21 and et_min == 55 and strategy.position_size != 0
     strategy.close_all("Session End")
 </pre>
@@ -99,7 +106,7 @@ function copyScript() {
     var text = document.getElementById("code").innerText;
     navigator.clipboard.writeText(text).then(function() {
         document.querySelector("button").innerText = "Copied!";
-        setTimeout(function(){ document.querySelector("button").innerText = "Copy Backtest v2"; }, 2000);
+        setTimeout(function(){ document.querySelector("button").innerText = "Copy 1m Backtest"; }, 2000);
     });
 }
 </script>
