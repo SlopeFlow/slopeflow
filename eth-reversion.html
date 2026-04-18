@@ -1,65 +1,65 @@
 <!DOCTYPE html>
 <html>
-<head><title>ETH Open Reversion v4 | Newsie</title>
+<head><title>ETH Open Reversion v5 | Newsie</title>
 <style>
-body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
-h2 { color: #00e5ff; }
-p,li { color: #aaa; line-height: 1.8; }
-pre { background: #111; padding: 20px; border: 1px solid #333; border-radius: 6px; overflow-x: auto; white-space: pre; font-size: 13px; line-height: 1.5; }
-button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; margin-bottom: 16px; font-weight: bold; }
-</style>
-</head>
-<body>
-<h2>ETH Open Reversion | Newsie v4</h2>
+body{background:#1a1a1a;color:#e0e0e0;font-family:monospace;padding:20px}
+h2{color:#00e5ff}p,li{color:#aaa;line-height:1.8}
+pre{background:#111;padding:20px;border:1px solid #333;border-radius:6px;overflow-x:auto;white-space:pre;font-size:13px;line-height:1.5}
+button{background:#00e5ff;color:#000;border:none;padding:10px 24px;font-size:15px;border-radius:4px;cursor:pointer;margin-bottom:16px;font-weight:bold}
+</style></head><body>
+<h2>ETH Open Reversion | Newsie v5</h2>
 <ul>
 <li><b>Aqua line</b> = ETH open mid (18:00 ET)</li>
-<li><b>Yellow lines</b> = Prior session high/low (liquidity targets)</li>
-<li><b>Green triangle</b> = LONG: bull candle closes above bear cluster high after sweeping prior session low</li>
-<li><b>Red triangle</b> = SHORT: bear candle closes below bull cluster low after sweeping prior session high</li>
-<li><b>TP1</b> = 50% of cluster range | <b>TP2</b> = 50% back to ETH mid (runners)</li>
-<li><b>Stop</b> = 10pts beyond cluster extreme</li>
+<li><b>Yellow lines</b> = Prior session high/low</li>
+<li><b>Yellow X</b> = Prior session level swept (hard trigger)</li>
+<li><b>Green triangle</b> = LONG: bull candle closes above bear cluster high, AFTER prior session low swept</li>
+<li><b>Red triangle</b> = SHORT: bear candle closes below bull cluster low, AFTER prior session high swept</li>
+<li><b>TP1</b> = top of bear cluster | <b>TP2</b> = 50% above cluster top</li>
+<li><b>Stop</b> = 10pts below sweep low</li>
 </ul>
-<button onclick="copyScript()">Copy v4 Script</button>
+<button onclick="copyScript()">Copy v5 Script</button>
 <pre id="code">//@version=6
-indicator("ETH Open Reversion | Newsie v4", overlay=true, max_bars_back=1000)
+indicator("ETH Open Reversion | Newsie v5", overlay=true, max_bars_back=1000)
 
 // INPUTS
-ext_min      = input.float(40.0, "Min Extension (pts)",       group="Setup")
-ext_max      = input.float(80.0, "Max Extension (pts)",       group="Setup")
-stop_pts     = input.float(10.0, "Stop Beyond Cluster (pts)", group="Setup")
-sweep_range  = input.float(15.0, "Prior Level Sweep Range (pts)", group="Setup")
-line_len     = input.int(60,     "TP line length (bars)",     group="Display")
+ext_min     = input.float(40.0, "Min Extension (pts)",        group="Setup")
+ext_max     = input.float(80.0, "Max Extension (pts)",        group="Setup")
+stop_pts    = input.float(10.0, "Stop Beyond Sweep Low (pts)", group="Setup")
+max_cluster = input.int(3,      "Max cluster candles",        group="Setup")
+line_len    = input.int(80,     "TP line length (bars)",      group="Display")
 
-// PRIOR SESSION HIGH/LOW
-// Session = 18:00 ET to 17:00 ET next day
+// SESSION &amp; ETH OPEN
 et_hour = hour(time, "America/New_York")
 et_min  = minute(time, "America/New_York")
-et_mins = et_hour * 60 + et_min
-
 is_session_open = et_hour == 18 and et_min == 0
-new_day = ta.change(dayofmonth(time, "America/New_York")) != 0
 
-var float eth_mid       = na
-var float session_high  = na
-var float session_low   = na
+var float eth_mid        = na
+var float session_high   = na
+var float session_low    = na
 var float prev_sess_high = na
 var float prev_sess_low  = na
-var float day_high      = na
-var float day_low       = na
-var bool  setup_done    = false
+var float day_high       = na
+var float day_low        = na
+var bool  setup_done     = false
+var bool  swept_low_flag = false
+var bool  swept_high_flag = false
+var float sweep_low_val  = na
+var float sweep_high_val = na
 
-// On new session open: roll current session to prior, reset current
 if is_session_open
-    prev_sess_high := session_high
-    prev_sess_low  := session_low
-    eth_mid        := (high + low) / 2
-    session_high   := high
-    session_low    := low
-    day_high       := high
-    day_low        := low
-    setup_done     := false
+    prev_sess_high  := session_high
+    prev_sess_low   := session_low
+    eth_mid         := (high + low) / 2
+    session_high    := high
+    session_low     := low
+    day_high        := high
+    day_low         := low
+    setup_done      := false
+    swept_low_flag  := false
+    swept_high_flag := false
+    sweep_low_val   := na
+    sweep_high_val  := na
 
-// Track current session high/low
 if not na(eth_mid)
     session_high := math.max(session_high, high)
     session_low  := math.min(session_low,  low)
@@ -68,59 +68,70 @@ if not na(eth_mid)
 
 up_ext = not na(day_high) and not na(eth_mid) ? day_high - eth_mid : na
 dn_ext = not na(day_low)  and not na(eth_mid) ? eth_mid - day_low  : na
-
 in_up_zone = not na(up_ext) and up_ext &gt;= ext_min and up_ext &lt;= ext_max and up_ext &gt; dn_ext * 1.3
 in_dn_zone = not na(dn_ext) and dn_ext &gt;= ext_min and dn_ext &lt;= ext_max and dn_ext &gt; up_ext * 1.3
 
-// ETH MID LINE
-plot(not na(eth_mid) ? eth_mid : na, "ETH Open Mid",
-     color=color.new(color.aqua, 30), linewidth=1, style=plot.style_line)
+// Detect prior session level sweep (hard requirement: candle must touch/cross the level)
+if not na(prev_sess_low) and low &lt;= prev_sess_low and not swept_low_flag
+    swept_low_flag := true
+    sweep_low_val  := low
 
-// PRIOR SESSION LEVELS
-plot(not na(prev_sess_high) ? prev_sess_high : na, "Prior Sess High",
-     color=color.new(color.yellow, 20), linewidth=1, style=plot.style_line)
-plot(not na(prev_sess_low) ? prev_sess_low : na, "Prior Sess Low",
-     color=color.new(color.yellow, 20), linewidth=1, style=plot.style_line)
+if not na(prev_sess_high) and high &gt;= prev_sess_high and not swept_high_flag
+    swept_high_flag := true
+    sweep_high_val  := high
 
-// SWEEP DETECTION
-// Price wicked through prior level but close is back inside
-near_prior_high = not na(prev_sess_high) and math.abs(high - prev_sess_high) &lt;= sweep_range
-near_prior_low  = not na(prev_sess_low)  and math.abs(low  - prev_sess_low)  &lt;= sweep_range
+// CLUSTER DETECTION — up to max_cluster consecutive bear candles
+bear1 = close[1] &lt; open[1]
+bear2 = close[2] &lt; open[2]
+bear3 = close[3] &lt; open[3]
+bull1 = close[1] &gt; open[1]
+bull2 = close[2] &gt; open[2]
+bull3 = close[3] &gt; open[3]
 
-swept_high = near_prior_high and high &gt;= prev_sess_high and close &lt; prev_sess_high
-swept_low  = near_prior_low  and low  &lt;= prev_sess_low  and close &gt; prev_sess_low
+// Cluster high = highest open of the bear candle sequence (top of cluster)
+// Cluster low  = lowest low of the sequence (the sweep point)
+cluster_bear_high = math.max(open[1], math.max(bear2 ? open[2] : open[1], bear3 ? open[3] : open[1]))
+cluster_bear_low  = math.min(low[1],  math.min(bear2 ? low[2]  : low[1],  bear3 ? low[3]  : low[1]))
+cluster_bear_range = cluster_bear_high - cluster_bear_low
+tp1_long = cluster_bear_high  // TP1 = top of cluster (full cluster range reclaim)
+tp2_long = cluster_bear_high + cluster_bear_range * 0.5  // TP2 = 50% above cluster top
 
-// CLUSTER LOW/HIGH DETECTION
-// Find the lowest low of the current bearish cluster (up to 3 consecutive bear candles)
-bear_candle  = close &lt; open
-bull_candle  = close &gt; open
+cluster_bull_low  = math.min(open[1],  math.min(bull2 ? open[2]  : open[1],  bull3 ? open[3]  : open[1]))
+cluster_bull_high = math.max(high[1],  math.max(bull2 ? high[2]  : high[1],  bull3 ? high[3]  : high[1]))
+cluster_bull_range = cluster_bull_high - cluster_bull_low
+tp1_short = cluster_bull_low
+tp2_short = cluster_bull_low - cluster_bull_range * 0.5
 
-// For LONG: identify cluster of 1-3 bear candles at the low
-// Entry: bull candle closes above the HIGH of the cluster (first bear candle in sequence)
-cluster_start_high = math.max(high[1], math.max(high[2], high[3]))
-cluster_low        = math.min(low[1],  math.min(low[2],  low[3]))
-cluster_range      = cluster_start_high - cluster_low
-tp1_long           = cluster_low + cluster_range * 0.5  // 50% of cluster range
+// ENTRY CONDITIONS
+// LONG: consecutive bear candles swept prior session low, current bull candle closes ABOVE cluster high
+long_entry = close &gt; open and                          // bull candle
+             close &gt; cluster_bear_high and             // closes above top of bear cluster
+             bear1 and                                 // at least 1 bear candle before
+             swept_low_flag and                        // prior session low was swept this session
+             in_dn_zone and                            // in extension zone
+             not setup_done
 
-// Long entry: bull close above cluster high, after sweep of prior low, in extension zone
-long_entry = bull_candle and close &gt; cluster_start_high and
-             (swept_low or (not na(prev_sess_low) and day_low &lt;= prev_sess_low + sweep_range)) and
-             in_dn_zone and not setup_done
-
-// For SHORT: cluster of 1-3 bull candles at the high
-cluster_start_low  = math.min(low[1],  math.min(low[2],  low[3]))
-cluster_high_val   = math.max(high[1], math.max(high[2], high[3]))
-cluster_range_s    = cluster_high_val - cluster_start_low
-tp1_short          = cluster_high_val - cluster_range_s * 0.5
-
-short_entry = bear_candle and close &lt; cluster_start_low and
-              (swept_high or (not na(prev_sess_high) and day_high &gt;= prev_sess_high - sweep_range)) and
-              in_up_zone and not setup_done
+// SHORT: consecutive bull candles swept prior session high, current bear candle closes BELOW cluster low
+short_entry = close &lt; open and
+              close &lt; cluster_bull_low and
+              bull1 and
+              swept_high_flag and
+              in_up_zone and
+              not setup_done
 
 if long_entry or short_entry
     setup_done := true
 
-// ARROWS
+// PLOTS
+plot(not na(eth_mid)        ? eth_mid        : na, "ETH Open Mid",    color=color.new(color.aqua,   30), linewidth=1)
+plot(not na(prev_sess_high) ? prev_sess_high : na, "Prior Sess High", color=color.new(color.yellow, 20), linewidth=1)
+plot(not na(prev_sess_low)  ? prev_sess_low  : na, "Prior Sess Low",  color=color.new(color.yellow, 20), linewidth=1)
+
+// Sweep markers
+plotshape(not na(prev_sess_low)  and low  &lt;= prev_sess_low  and not swept_low_flag[1],  "Swept Low",  shape.xcross, location.belowbar, color=color.new(color.yellow, 0), size=size.tiny)
+plotshape(not na(prev_sess_high) and high &gt;= prev_sess_high and not swept_high_flag[1], "Swept High", shape.xcross, location.abovebar, color=color.new(color.yellow, 0), size=size.tiny)
+
+// Signal arrows
 plotshape(long_entry,  "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(short_entry, "Short", shape.triangledown,  location.abovebar, color=color.new(color.red,  0), size=size.normal)
 
@@ -131,28 +142,26 @@ var line sl_line  = na
 atr = ta.atr(14)
 
 if long_entry
-    sl  = cluster_low - stop_pts
-    tp2 = close + (eth_mid - close) * 0.5
+    sl = cluster_bear_low - stop_pts
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    tp1_line := line.new(bar_index, tp1_long,  bar_index + line_len, tp1_long,  color=color.new(color.lime, 20), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, tp2,        bar_index + line_len, tp2,       color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, sl,         bar_index + line_len, sl,        color=color.new(color.red,  20), width=1, style=line.style_dashed)
-    label.new(bar_index, low - atr*0.4,
+    tp1_line := line.new(bar_index, tp1_long, bar_index + line_len, tp1_long, color=color.new(color.lime, 30), width=1, style=line.style_dashed)
+    tp2_line := line.new(bar_index, tp2_long, bar_index + line_len, tp2_long, color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, sl,       bar_index + line_len, sl,       color=color.new(color.red,  20), width=1, style=line.style_dashed)
+    label.new(bar_index, low - atr*0.5,
               "LONG  SL:" + str.tostring(math.round(sl,0)) + "  TP1:" + str.tostring(math.round(tp1_long,0)),
               style=label.style_label_up, color=color.new(color.lime,5), textcolor=color.black, size=size.tiny)
 
 if short_entry
-    sl  = cluster_high_val + stop_pts
-    tp2 = close - (close - eth_mid) * 0.5
+    sl = cluster_bull_high + stop_pts
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    tp1_line := line.new(bar_index, tp1_short, bar_index + line_len, tp1_short, color=color.new(color.lime, 20), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, tp2,       bar_index + line_len, tp2,       color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
+    tp1_line := line.new(bar_index, tp1_short, bar_index + line_len, tp1_short, color=color.new(color.lime, 30), width=1, style=line.style_dashed)
+    tp2_line := line.new(bar_index, tp2_short, bar_index + line_len, tp2_short, color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
     sl_line  := line.new(bar_index, sl,        bar_index + line_len, sl,        color=color.new(color.red,  20), width=1, style=line.style_dashed)
-    label.new(bar_index, high + atr*0.4,
+    label.new(bar_index, high + atr*0.5,
               "SHORT  SL:" + str.tostring(math.round(sl,0)) + "  TP1:" + str.tostring(math.round(tp1_short,0)),
               style=label.style_label_down, color=color.new(color.red,5), textcolor=color.white, size=size.tiny)
 
@@ -160,13 +169,10 @@ alertcondition(long_entry,  "ETH LONG",  "ETH Reversion: LONG signal")
 alertcondition(short_entry, "ETH SHORT", "ETH Reversion: SHORT signal")
 </pre>
 <script>
-function copyScript() {
-    var text = document.getElementById("code").innerText;
-    navigator.clipboard.writeText(text).then(function() {
-        document.querySelector("button").innerText = "Copied!";
-        setTimeout(function(){ document.querySelector("button").innerText = "Copy v4 Script"; }, 2000);
+function copyScript(){
+    navigator.clipboard.writeText(document.getElementById("code").innerText).then(function(){
+        document.querySelector("button").innerText="Copied!";
+        setTimeout(function(){document.querySelector("button").innerText="Copy v5 Script"},2000);
     });
 }
-</script>
-</body>
-</html>
+</script></body></html>
