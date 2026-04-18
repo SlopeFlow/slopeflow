@@ -1,117 +1,158 @@
 <!DOCTYPE html>
-<html><head><title>23/29/35 CHoCH Reversion | Newsie</title>
+<html><head><title>23/29/35 Zone System | Newsie</title>
 <style>
 body{background:#1a1a1a;color:#e0e0e0;font-family:monospace;padding:20px}
 h2{color:#00e5ff}p,li{color:#aaa;line-height:1.8}
 pre{background:#111;padding:20px;border:1px solid #333;border-radius:6px;overflow-x:auto;white-space:pre;font-size:13px;line-height:1.5}
 button{background:#00e5ff;color:#000;border:none;padding:10px 24px;font-size:15px;border-radius:4px;cursor:pointer;margin-bottom:16px;font-weight:bold}
 </style></head><body>
-<h2>23/29/35 CHoCH Reversion | Newsie</h2>
+<h2>23/29/35 Zone System | Newsie</h2>
 <ul>
-<li><b>Purple bar</b> = 23/29/35 time zone</li>
-<li><b>Green dots</b> = valid swing high | <b>Red dots</b> = valid swing low</li>
-<li><b>Signal</b> = 23/29/35 bar creates CHoCH at local extreme</li>
-<li><b>White dotted</b> = 50% fib entry (limit order)</li>
-<li><b>Light green dashed</b> = TP1 20pts (move stop to BE) | <b>Green dashed</b> = TP2 30pts</li>
-<li><b>Red dashed</b> = Stop 10pts | Label shows Entry/TP2/SL</li>
+<li><b>White line</b> = 50% zone midpoint (entry area)</li>
+<li><b>Green stepline</b> = current leg high | <b>Red stepline</b> = current leg low</li>
+<li><b>Orange X</b> = invalid high/low (wrong candle color — discard)</li>
+<li><b>Purple bar</b> = 23/29/35 time zone active</li>
+<li><b>Signal fires</b> when 23/29/35 bar touches the 50% zone</li>
+<li>Time methods: h+m, m-h, minute alone, drop-zeros (02:03=23 etc)</li>
+<li>Stop 10pts | TP1 20pts (move to BE) | TP2 30pts runner</li>
+<li>Zone resets on opposite CHoCH or new day</li>
 </ul>
 <button onclick="copyScript()">Copy Script</button>
 <pre id="code">//@version=6
-indicator("23/29/35 CHoCH Reversion | Newsie", overlay=true, max_bars_back=1000)
+indicator("23/29/35 Zone System | Newsie", overlay=true, max_bars_back=1000)
 
 // INPUTS
-stop_pts  = input.float(10.0, "Stop Loss (pts)",        group="Risk")
-tp1_pts   = input.float(20.0, "TP1 Move to BE (pts)",   group="Risk")
-tp2_pts   = input.float(30.0, "TP2 Runner (pts)",       group="Risk")
-swing_len = input.int(5,      "Swing lookback bars",    group="Structure")
-min_leg   = input.float(15.0, "Min leg size (pts)",     group="Structure")
-line_len  = input.int(80,     "Line length (bars)",     group="Display")
+stop_pts  = input.float(10.0, "Stop Loss (pts)",      group="Risk")
+tp1_pts   = input.float(20.0, "TP1 BE level (pts)",   group="Risk")
+tp2_pts   = input.float(30.0, "TP2 Runner (pts)",     group="Risk")
+line_len  = input.int(200,    "Zone line length",      group="Display")
 
-// TIME ZONES (ET)
-et_hour  = hour(time, "America/New_York")
-et_min   = minute(time, "America/New_York")
-h_plus_m = et_hour + et_min
+// ─── TIME CALCULATION ─────────────────────────────────────────
+et_h = hour(time,   "America/New_York")
+et_m = minute(time, "America/New_York")
 
-in_23 = (h_plus_m &gt;= 22 and h_plus_m &lt;= 24) or (et_min &gt;= 22 and et_min &lt;= 24)
-in_29 = (h_plus_m &gt;= 28 and h_plus_m &lt;= 30) or (et_min &gt;= 28 and et_min &lt;= 30)
-in_35 = (h_plus_m &gt;= 34 and h_plus_m &lt;= 36) or (et_min &gt;= 34 and et_min &lt;= 36)
+h_plus_m = et_h + et_m
+m_minus_h = et_m - et_h
+min_only  = et_m
+
+// Drop-zero method (specific times only)
+drop_zero = (et_h == 2 and et_m &gt;= 2  and et_m &lt;= 4)  or   // 02:02-04 = 22-24
+            (et_h == 2 and et_m &gt;= 8  and et_m &lt;= 9)  or   // 02:08-09 = 28-29
+            (et_h == 3 and et_m &gt;= 4  and et_m &lt;= 6)        // 03:04-06 = 34-36
+
+drop_zero_val = et_h * 10 + et_m  // e.g. 2*10+3 = 23
+
+in_23_dz = drop_zero and (drop_zero_val &gt;= 22 and drop_zero_val &lt;= 24)
+in_29_dz = drop_zero and (drop_zero_val &gt;= 28 and drop_zero_val &lt;= 29)
+in_35_dz = drop_zero and (drop_zero_val &gt;= 34 and drop_zero_val &lt;= 36)
+
+in_23 = (h_plus_m  &gt;= 22 and h_plus_m  &lt;= 24) or
+        (m_minus_h &gt;= 22 and m_minus_h &lt;= 24) or
+        (min_only  &gt;= 22 and min_only  &lt;= 24) or in_23_dz
+
+in_29 = (h_plus_m  &gt;= 28 and h_plus_m  &lt;= 30) or
+        (m_minus_h &gt;= 28 and m_minus_h &lt;= 30) or
+        (min_only  &gt;= 28 and min_only  &lt;= 30) or in_29_dz
+
+in_35 = (h_plus_m  &gt;= 34 and h_plus_m  &lt;= 36) or
+        (m_minus_h &gt;= 34 and m_minus_h &lt;= 36) or
+        (min_only  &gt;= 34 and min_only  &lt;= 36) or in_35_dz
+
 is_time  = in_23 or in_29 or in_35
 zone_lbl = in_23 ? "23" : in_29 ? "29" : "35"
 
-// CANDLE DIRECTION
+// ─── CANDLE DIRECTION ─────────────────────────────────────────
 bull_c = close &gt; open
 bear_c = close &lt; open
 
-// SWING PIVOTS
-ph = ta.pivothigh(high, swing_len, swing_len)
-pl = ta.pivotlow(low,  swing_len, swing_len)
+// ─── LEG TRACKING ─────────────────────────────────────────────
+// Track the current leg: one anchor high (bull candle) + one anchor low (bear candle)
+// Update high on each new HH with bull candle (keep low anchor)
+// Update low on each new LL with bear candle (keep high anchor)
+// Reset both when 50% is touched (zone used) or opposite CHoCH
 
-bull_ph = not na(ph) and close[swing_len] &gt; open[swing_len]
-bear_pl = not na(pl)  and close[swing_len] &lt; open[swing_len]
+var float leg_high     = na   // current leg high (bull candle)
+var float leg_low      = na   // current leg low (bear candle)
+var float zone_50      = na   // 50% midpoint of leg
+var bool  long_active  = false // tracking upleg (longs)
+var bool  short_active = false // tracking downleg (shorts)
+var bool  zone_touched = false // 50% has been touched this zone
 
-// Track most recent valid swing high/low
-var float last_swing_high = na
-var float last_swing_low  = na
+new_day = ta.change(dayofmonth(time, "America/New_York")) != 0
 
-if bull_ph
-    last_swing_high := ph
+if new_day
+    leg_high     := na
+    leg_low      := na
+    zone_50      := na
+    long_active  := false
+    short_active := false
+    zone_touched := false
 
-if bear_pl
-    last_swing_low := pl
+// New valid high: bull candle that is higher than recent bars
+is_new_hh = bull_c and high &gt; ta.highest(high[1], 5)
 
-// Draw swing levels
-plot(not na(last_swing_high) ? last_swing_high : na, "Swing High",
-     color=color.new(color.lime, 60), linewidth=1, style=plot.style_circles)
-plot(not na(last_swing_low) ? last_swing_low : na, "Swing Low",
-     color=color.new(color.red, 60), linewidth=1, style=plot.style_circles)
+// New valid low: bear candle that is lower than recent bars
+is_new_ll = bear_c and low &lt; ta.lowest(low[1], 5)
 
-// CHoCH DETECTION
-lookback_high = ta.highest(high, swing_len)
-lookback_low  = ta.lowest(low,   swing_len)
+// UPLEG: new HH with bull candle
+if is_new_hh
+    if not long_active
+        // Start fresh upleg — anchor low = most recent bear candle low
+        leg_low    := ta.lowest(low, 10)
+        long_active  := true
+        short_active := false
+        zone_touched := false
+    // Update high anchor (keep same low)
+    leg_high := high
+    zone_50  := (leg_high + leg_low) / 2
 
-short_choch = is_time and bear_c and high &gt;= lookback_high[1] and not na(last_swing_low)
-long_choch  = is_time and bull_c and low  &lt;= lookback_low[1]  and not na(last_swing_high)
+// DOWNLEG: new LL with bear candle
+if is_new_ll
+    if not short_active
+        // Start fresh downleg — anchor high = most recent bull candle high
+        leg_high     := ta.highest(high, 10)
+        short_active := true
+        long_active  := false
+        zone_touched := false
+    // Update low anchor (keep same high)
+    leg_low := low
+    zone_50 := (leg_high + leg_low) / 2
 
-// Leg size validation
-short_leg = not na(last_swing_low)  ? high - last_swing_low  : na
-long_leg  = not na(last_swing_high) ? last_swing_high - low  : na
+// ─── ZONE DISPLAY ─────────────────────────────────────────────
+// Draw 50% zone as a line
+plot(not na(zone_50) ? zone_50 : na, "50% Zone",
+     color=color.new(color.white, 40), linewidth=1, style=plot.style_line)
 
-short_valid = short_choch and not na(short_leg) and short_leg &gt;= min_leg
-long_valid  = long_choch  and not na(long_leg)  and long_leg  &gt;= min_leg
+// Draw leg high/low
+plot(not na(leg_high) ? leg_high : na, "Leg High",
+     color=color.new(color.lime, 50), linewidth=1, style=plot.style_stepline)
+plot(not na(leg_low) ? leg_low : na, "Leg Low",
+     color=color.new(color.red, 50), linewidth=1, style=plot.style_stepline)
 
-// One signal per CHoCH
-var bool short_taken = false
-var bool long_taken  = false
+// ─── SIGNAL: 23/29/35 bar touches 50% zone ─────────────────────
+zone_tolerance = 5.0  // within 5pts of 50% counts as "touching"
 
-if bull_ph
-    short_taken := false
+at_50_long  = long_active  and not na(zone_50) and low  &lt;= zone_50 + zone_tolerance and low  &gt;= zone_50 - zone_tolerance
+at_50_short = short_active and not na(zone_50) and high &gt;= zone_50 - zone_tolerance and high &lt;= zone_50 + zone_tolerance
 
-if bear_pl
-    long_taken := false
+long_signal  = is_time and at_50_long  and bull_c
+short_signal = is_time and at_50_short and bear_c
 
-short_signal = short_valid and not short_taken
-long_signal  = long_valid  and not long_taken
-
-if short_signal
-    short_taken := true
-
-if long_signal
-    long_taken := true
-
-// Entry and level calculations
-short_fib50 = short_signal ? high - short_leg * 0.5 : na
-long_fib50  = long_signal  ? low  + long_leg  * 0.5 : na
-
-short_stop = short_signal ? high + stop_pts : na
-short_tp1  = short_signal ? short_fib50 - tp1_pts : na
-short_tp2  = short_signal ? short_fib50 - tp2_pts : na
-
-long_stop  = long_signal ? low - stop_pts : na
-long_tp1   = long_signal ? long_fib50 + tp1_pts : na
-long_tp2   = long_signal ? long_fib50 + tp2_pts : na
+// Mark zone touched
+if at_50_long or at_50_short
+    zone_touched := true
 
 // Time bar highlight
 bgcolor(is_time ? color.new(color.purple, 93) : na, title="Time Bar")
+
+// Invalid high/low markers (wrong candle color)
+invalid_high = is_new_hh and bear_c  // high made by bear candle = invalid
+invalid_low  = is_new_ll and bull_c  // low made by bull candle = invalid
+
+plotshape(invalid_high, "Invalid High", shape.xcross, location.abovebar,
+          color=color.new(color.orange, 20), size=size.tiny)
+plotshape(invalid_low,  "Invalid Low",  shape.xcross, location.belowbar,
+          color=color.new(color.orange, 20), size=size.tiny)
 
 // Signal arrows
 plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar,
@@ -119,55 +160,46 @@ plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar,
 plotshape(short_signal, "Short", shape.triangledown,  location.abovebar,
           color=color.new(color.red,  0), size=size.normal)
 
-// Lines
-var line fib_line = na
+// TP / Stop lines
 var line tp1_line = na
 var line tp2_line = na
 var line sl_line  = na
 atr = ta.atr(14)
 
 if long_signal
-    line.delete(fib_line)
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    fib_line := line.new(bar_index, long_fib50, bar_index + line_len, long_fib50,
-                         color=color.new(color.white, 40), width=1, style=line.style_dotted)
-    tp1_line := line.new(bar_index, long_tp1, bar_index + line_len, long_tp1,
-                         color=color.new(color.lime, 30), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, long_tp2, bar_index + line_len, long_tp2,
-                         color=color.new(color.lime, 0), width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, long_stop, bar_index + line_len, long_stop,
-                         color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    tp1_line := line.new(bar_index, close + tp1_pts, bar_index + line_len, close + tp1_pts,
+                         color=color.new(color.lime, 40), width=1, style=line.style_dashed)
+    tp2_line := line.new(bar_index, close + tp2_pts, bar_index + line_len, close + tp2_pts,
+                         color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, close - stop_pts, bar_index + line_len, close - stop_pts,
+                         color=color.new(color.red,  20), width=1, style=line.style_dashed)
     label.new(bar_index, low - atr * 0.5,
-              "LONG " + zone_lbl + "\nEntry: " + str.tostring(math.round(long_fib50, 0)) +
-              "\nTP2: " + str.tostring(math.round(long_tp2, 0)) +
-              "\nSL: " + str.tostring(math.round(long_stop, 0)),
+              "LONG " + zone_lbl + "\nSL:" + str.tostring(math.round(close - stop_pts, 0)) +
+              "  TP2:" + str.tostring(math.round(close + tp2_pts, 0)),
               style=label.style_label_up, color=color.new(color.lime, 5),
               textcolor=color.black, size=size.tiny)
 
 if short_signal
-    line.delete(fib_line)
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    fib_line := line.new(bar_index, short_fib50, bar_index + line_len, short_fib50,
-                         color=color.new(color.white, 40), width=1, style=line.style_dotted)
-    tp1_line := line.new(bar_index, short_tp1, bar_index + line_len, short_tp1,
-                         color=color.new(color.lime, 30), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, short_tp2, bar_index + line_len, short_tp2,
-                         color=color.new(color.lime, 0), width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, short_stop, bar_index + line_len, short_stop,
-                         color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    tp1_line := line.new(bar_index, close - tp1_pts, bar_index + line_len, close - tp1_pts,
+                         color=color.new(color.lime, 40), width=1, style=line.style_dashed)
+    tp2_line := line.new(bar_index, close - tp2_pts, bar_index + line_len, close - tp2_pts,
+                         color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, close + stop_pts, bar_index + line_len, close + stop_pts,
+                         color=color.new(color.red,  20), width=1, style=line.style_dashed)
     label.new(bar_index, high + atr * 0.5,
-              "SHORT " + zone_lbl + "\nEntry: " + str.tostring(math.round(short_fib50, 0)) +
-              "\nTP2: " + str.tostring(math.round(short_tp2, 0)) +
-              "\nSL: " + str.tostring(math.round(short_stop, 0)),
+              "SHORT " + zone_lbl + "\nSL:" + str.tostring(math.round(close + stop_pts, 0)) +
+              "  TP2:" + str.tostring(math.round(close - tp2_pts, 0)),
               style=label.style_label_down, color=color.new(color.red, 5),
               textcolor=color.white, size=size.tiny)
 
-alertcondition(long_signal,  "23/29/35 LONG",  "CHoCH Time: LONG signal")
-alertcondition(short_signal, "23/29/35 SHORT", "CHoCH Time: SHORT signal")
+alertcondition(long_signal,  "Zone LONG",  "23/29/35 Zone: LONG signal")
+alertcondition(short_signal, "Zone SHORT", "23/29/35 Zone: SHORT signal")
 </pre>
 <script>
 function copyScript(){
