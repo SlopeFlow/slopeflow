@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><title>ETH Open Reversion | Newsie</title>
+<head><title>ETH Open Reversion v3 | Newsie</title>
 <style>
 body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
 h2 { color: #00e5ff; }
@@ -10,13 +10,14 @@ button { background: #00e5ff; color: #000; border: none; padding: 10px 24px; fon
 </style>
 </head>
 <body>
-<h2>ETH Open Reversion | Newsie v2</h2>
-<p><b>83.3% win rate TP1 | 62.5% TP2 — 24 setups, 2 months MNQ</b></p>
+<h2>ETH Open Reversion | Newsie v3</h2>
+<p>Clean minimal design:</p>
 <ul>
-<li>White line = ETH open mid (18:00 ET anchor)</li>
-<li>Yellow dashed bands = 40pt and 80pt extension zones</li>
-<li>Green label = LONG signal | Red label = SHORT signal</li>
-<li>Dashed lines = TP1, TP2, Stop (auto-clear on new signal)</li>
+<li>Single gray dashed line = ETH open mid (18:00 ET)</li>
+<li>Small dot = price enters extension zone (40-80pts from mid)</li>
+<li>Green triangle up = LONG signal | Red triangle down = SHORT signal</li>
+<li>Dashed lines = TP1, TP2, Stop — auto-expire after 40 bars</li>
+<li>No background shading, no spanning zone lines</li>
 </ul>
 <button onclick="copyScript()">Copy Script</button>
 <pre id="code">//@version=6
@@ -27,22 +28,24 @@ ext_min  = input.float(40.0, "Min Extension (pts)",    group="Setup")
 ext_max  = input.float(80.0, "Max Extension (pts)",    group="Setup")
 wick_min = input.float(5.0,  "Min Wick Size (pts)",    group="Setup")
 stop_pts = input.float(10.0, "Stop Beyond Wick (pts)", group="Setup")
+tp1_pts  = input.float(20.0, "TP1 (pts)",              group="Setup")
+tp2_pts  = input.float(40.0, "TP2 (pts)",              group="Setup")
+line_len = input.int(40,     "TP/Stop line length (bars)", group="Display")
 
-// ETH OPEN CANDLE (18:00 ET)
+// ETH OPEN
 et_hour = hour(time, "America/New_York")
 et_min  = minute(time, "America/New_York")
-
 is_eth_open = et_hour == 18 and et_min == 0
 new_day     = ta.change(dayofmonth(time, "America/New_York")) != 0
 
-var float eth_mid   = na
-var float day_high  = na
-var float day_low   = na
+var float eth_mid  = na
+var float day_high = na
+var float day_low  = na
 var bool  setup_done = false
 
 if new_day
-    day_high   := na
-    day_low    := na
+    day_high := na
+    day_low  := na
     setup_done := false
 
 if is_eth_open
@@ -58,22 +61,14 @@ if not na(eth_mid) and not is_eth_open
 up_ext = not na(day_high) and not na(eth_mid) ? day_high - eth_mid : na
 dn_ext = not na(day_low)  and not na(eth_mid) ? eth_mid - day_low  : na
 
-// ETH MID LINE
-plot(not na(eth_mid) ? eth_mid : na, "ETH Open Mid",
-     color=color.new(color.white, 30), linewidth=2, style=plot.style_stepline)
-
-// EXTENSION BANDS (subtle)
-plot(not na(eth_mid) ? eth_mid + ext_min : na, "40pt Up",  color=color.new(color.yellow, 75), linewidth=1, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid + ext_max : na, "80pt Up",  color=color.new(color.yellow, 50), linewidth=1, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid - ext_min : na, "40pt Dn",  color=color.new(color.yellow, 75), linewidth=1, style=plot.style_stepline)
-plot(not na(eth_mid) ? eth_mid - ext_max : na, "80pt Dn",  color=color.new(color.yellow, 50), linewidth=1, style=plot.style_stepline)
-
-// ZONE HIGHLIGHT (very subtle)
 in_up_zone = not na(up_ext) and up_ext &gt;= ext_min and up_ext &lt;= ext_max and up_ext &gt; dn_ext * 1.3
 in_dn_zone = not na(dn_ext) and dn_ext &gt;= ext_min and dn_ext &lt;= ext_max and dn_ext &gt; up_ext * 1.3
-bgcolor(in_up_zone ? color.new(color.red, 96) : in_dn_zone ? color.new(color.lime, 96) : na)
 
-// CHANGE OF CHARACTER
+// ETH MID — single dashed line, subtle
+plot(not na(eth_mid) ? eth_mid : na, "ETH Open Mid",
+     color=color.new(color.gray, 50), linewidth=1, style=plot.style_line)
+
+// CoC signals
 prev_top_wick = high[1] - math.max(open[1], close[1])
 prev_bot_wick = math.min(open[1], close[1]) - low[1]
 short_coc = prev_top_wick &gt;= wick_min and close &lt; low[1]
@@ -85,43 +80,45 @@ short_signal = in_up_zone and short_coc and not setup_done
 if long_signal or short_signal
     setup_done := true
 
-// TP/STOP LINES — draw only on signal, auto-clear previous
-var line tp1_line  = na
-var line tp2_line  = na
-var line sl_line   = na
+// ARROWS only — no labels
+plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
+plotshape(short_signal, "Short", shape.triangledown,  location.abovebar, color=color.new(color.red,  0), size=size.normal)
 
-atr = ta.atr(14)
+// TP / STOP lines — draw once, auto-expire after line_len bars
+var line tp1_line = na
+var line tp2_line = na
+var line sl_line  = na
 
 if long_signal
-    tp1 = close + (eth_mid - close) * 0.5
-    tp2 = close + (eth_mid - close) * 0.75
-    sl  = day_low - stop_pts
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    tp1_line := line.new(bar_index, tp1, bar_index + 30, tp1, color=color.new(color.lime, 20),  width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, tp2, bar_index + 30, tp2, color=color.new(color.lime, 0),   width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, sl,  bar_index + 30, sl,  color=color.new(color.red,  20),  width=1, style=line.style_dashed)
-    label.new(bar_index, low - atr * 0.4,
-              "ETH LONG  " + str.tostring(math.round(dn_ext, 0)) + "pt | W:" + str.tostring(math.round(prev_bot_wick, 1)),
-              style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
+    tp1_line := line.new(bar_index, close + tp1_pts, bar_index + line_len, close + tp1_pts,
+                         color=color.new(color.lime, 30), width=1, style=line.style_dashed)
+    tp2_line := line.new(bar_index, close + tp2_pts, bar_index + line_len, close + tp2_pts,
+                         color=color.new(color.lime, 10), width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, close - stop_pts, bar_index + line_len, close - stop_pts,
+                         color=color.new(color.red, 30), width=1, style=line.style_dashed)
 
 if short_signal
-    tp1 = close - (close - eth_mid) * 0.5
-    tp2 = close - (close - eth_mid) * 0.75
-    sl  = day_high + stop_pts
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    tp1_line := line.new(bar_index, tp1, bar_index + 30, tp1, color=color.new(color.lime, 20),  width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, tp2, bar_index + 30, tp2, color=color.new(color.lime, 0),   width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, sl,  bar_index + 30, sl,  color=color.new(color.red,  20),  width=1, style=line.style_dashed)
-    label.new(bar_index, high + atr * 0.4,
-              "ETH SHORT  " + str.tostring(math.round(up_ext, 0)) + "pt | W:" + str.tostring(math.round(prev_top_wick, 1)),
-              style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
+    tp1_line := line.new(bar_index, close - tp1_pts, bar_index + line_len, close - tp1_pts,
+                         color=color.new(color.lime, 30), width=1, style=line.style_dashed)
+    tp2_line := line.new(bar_index, close - tp2_pts, bar_index + line_len, close - tp2_pts,
+                         color=color.new(color.lime, 10), width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, close + stop_pts, bar_index + line_len, close + stop_pts,
+                         color=color.new(color.red, 30), width=1, style=line.style_dashed)
 
-alertcondition(long_signal,  "ETH Reversion LONG",  "ETH Open Reversion: LONG")
-alertcondition(short_signal, "ETH Reversion SHORT", "ETH Open Reversion: SHORT")
+// Tiny zone dot at extremes only (no spanning lines)
+plotshape(in_up_zone and not in_up_zone[1], "Enter Short Zone", shape.circle,
+          location.abovebar, color=color.new(color.red, 40), size=size.tiny)
+plotshape(in_dn_zone and not in_dn_zone[1], "Enter Long Zone", shape.circle,
+          location.belowbar, color=color.new(color.lime, 40), size=size.tiny)
+
+alertcondition(long_signal,  "ETH LONG",  "ETH Reversion: LONG signal")
+alertcondition(short_signal, "ETH SHORT", "ETH Reversion: SHORT signal")
 </pre>
 <script>
 function copyScript() {
