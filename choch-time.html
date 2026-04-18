@@ -8,15 +8,12 @@ button{background:#00e5ff;color:#000;border:none;padding:10px 24px;font-size:15p
 </style></head><body>
 <h2>23/29/35 CHoCH Reversion | Newsie</h2>
 <ul>
-<li><b>Purple bar</b> = 23/29/35 time zone active</li>
-<li><b>Green dots</b> = most recent valid swing high (bull candle pivot)</li>
-<li><b>Red dots</b> = most recent valid swing low (bear candle pivot)</li>
-<li><b>Signal fires</b> when 23/29/35 bar creates a CHoCH at a local extreme</li>
-<li><b>White dotted</b> = 50% fib entry level (limit order here)</li>
-<li><b>Light green dashed</b> = TP1 (20pts) — move stop to breakeven when hit</li>
-<li><b>Green dashed</b> = TP2 (30pts) — runner target</li>
-<li><b>Red dashed</b> = Stop (10pts beyond extreme)</li>
-<li>Label shows Entry / TP2 / SL prices</li>
+<li><b>Purple bar</b> = 23/29/35 time zone</li>
+<li><b>Green dots</b> = valid swing high | <b>Red dots</b> = valid swing low</li>
+<li><b>Signal</b> = 23/29/35 bar creates CHoCH at local extreme</li>
+<li><b>White dotted</b> = 50% fib entry (limit order)</li>
+<li><b>Light green dashed</b> = TP1 20pts (move stop to BE) | <b>Green dashed</b> = TP2 30pts</li>
+<li><b>Red dashed</b> = Stop 10pts | Label shows Entry/TP2/SL</li>
 </ul>
 <button onclick="copyScript()">Copy Script</button>
 <pre id="code">//@version=6
@@ -24,7 +21,7 @@ indicator("23/29/35 CHoCH Reversion | Newsie", overlay=true, max_bars_back=1000)
 
 // INPUTS
 stop_pts  = input.float(10.0, "Stop Loss (pts)",        group="Risk")
-tp1_pts   = input.float(20.0, "TP1 / Move to BE (pts)", group="Risk")
+tp1_pts   = input.float(20.0, "TP1 Move to BE (pts)",   group="Risk")
 tp2_pts   = input.float(30.0, "TP2 Runner (pts)",       group="Risk")
 swing_len = input.int(5,      "Swing lookback bars",    group="Structure")
 min_leg   = input.float(15.0, "Min leg size (pts)",     group="Structure")
@@ -45,7 +42,7 @@ zone_lbl = in_23 ? "23" : in_29 ? "29" : "35"
 bull_c = close &gt; open
 bear_c = close &lt; open
 
-// SWING PIVOTS (valid: bull candle high, bear candle low)
+// SWING PIVOTS
 ph = ta.pivothigh(high, swing_len, swing_len)
 pl = ta.pivotlow(low,  swing_len, swing_len)
 
@@ -62,16 +59,13 @@ if bull_ph
 if bear_pl
     last_swing_low := pl
 
-// Draw swing levels (subtle dotted)
+// Draw swing levels
 plot(not na(last_swing_high) ? last_swing_high : na, "Swing High",
      color=color.new(color.lime, 60), linewidth=1, style=plot.style_circles)
 plot(not na(last_swing_low) ? last_swing_low : na, "Swing Low",
      color=color.new(color.red, 60), linewidth=1, style=plot.style_circles)
 
-// CHoCH DETECTION at 23/29/35 bar
-// SHORT: 23/29/35 bear candle at local high (above recent swing), leg from last swing low
-// LONG:  23/29/35 bull candle at local low (below recent swing), leg from last swing high
-
+// CHoCH DETECTION
 lookback_high = ta.highest(high, swing_len)
 lookback_low  = ta.lowest(low,   swing_len)
 
@@ -85,28 +79,29 @@ long_leg  = not na(last_swing_high) ? last_swing_high - low  : na
 short_valid = short_choch and not na(short_leg) and short_leg &gt;= min_leg
 long_valid  = long_choch  and not na(long_leg)  and long_leg  &gt;= min_leg
 
-// One signal per CHoCH (reset when new swing forms)
+// One signal per CHoCH
 var bool short_taken = false
 var bool long_taken  = false
 
 if bull_ph
     short_taken := false
+
 if bear_pl
-    long_taken  := false
+    long_taken := false
 
 short_signal = short_valid and not short_taken
 long_signal  = long_valid  and not long_taken
 
 if short_signal
     short_taken := true
-if long_signal
-    long_taken  := true
 
-// Entry levels (50% fib of leg)
+if long_signal
+    long_taken := true
+
+// Entry and level calculations
 short_fib50 = short_signal ? high - short_leg * 0.5 : na
 long_fib50  = long_signal  ? low  + long_leg  * 0.5 : na
 
-// TP / Stop levels
 short_stop = short_signal ? high + stop_pts : na
 short_tp1  = short_signal ? short_fib50 - tp1_pts : na
 short_tp2  = short_signal ? short_fib50 - tp2_pts : na
@@ -124,11 +119,11 @@ plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar,
 plotshape(short_signal, "Short", shape.triangledown,  location.abovebar,
           color=color.new(color.red,  0), size=size.normal)
 
-// Draw lines on signal
-var line fib_line  = na
-var line tp1_line  = na
-var line tp2_line  = na
-var line sl_line   = na
+// Lines
+var line fib_line = na
+var line tp1_line = na
+var line tp2_line = na
+var line sl_line  = na
 atr = ta.atr(14)
 
 if long_signal
@@ -136,22 +131,19 @@ if long_signal
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    fib_line := line.new(bar_index, long_fib50, bar_index+line_len, long_fib50,
+    fib_line := line.new(bar_index, long_fib50, bar_index + line_len, long_fib50,
                          color=color.new(color.white, 40), width=1, style=line.style_dotted)
-    tp1_line := line.new(bar_index, long_tp1,   bar_index+line_len, long_tp1,
+    tp1_line := line.new(bar_index, long_tp1, bar_index + line_len, long_tp1,
                          color=color.new(color.lime, 30), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, long_tp2,   bar_index+line_len, long_tp2,
-                         color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, long_stop,  bar_index+line_len, long_stop,
-                         color=color.new(color.red,  20), width=1, style=line.style_dashed)
-    label.new(bar_index, low - atr*0.5,
-              "LONG " + zone_lbl + "
-Entry: " + str.tostring(math.round(long_fib50,0)) +
-              "
-TP2: "  + str.tostring(math.round(long_tp2,0)) +
-              "
-SL: "   + str.tostring(math.round(long_stop,0)),
-              style=label.style_label_up, color=color.new(color.lime,5),
+    tp2_line := line.new(bar_index, long_tp2, bar_index + line_len, long_tp2,
+                         color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, long_stop, bar_index + line_len, long_stop,
+                         color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    label.new(bar_index, low - atr * 0.5,
+              "LONG " + zone_lbl + "\nEntry: " + str.tostring(math.round(long_fib50, 0)) +
+              "\nTP2: " + str.tostring(math.round(long_tp2, 0)) +
+              "\nSL: " + str.tostring(math.round(long_stop, 0)),
+              style=label.style_label_up, color=color.new(color.lime, 5),
               textcolor=color.black, size=size.tiny)
 
 if short_signal
@@ -159,26 +151,23 @@ if short_signal
     line.delete(tp1_line)
     line.delete(tp2_line)
     line.delete(sl_line)
-    fib_line := line.new(bar_index, short_fib50, bar_index+line_len, short_fib50,
+    fib_line := line.new(bar_index, short_fib50, bar_index + line_len, short_fib50,
                          color=color.new(color.white, 40), width=1, style=line.style_dotted)
-    tp1_line := line.new(bar_index, short_tp1,   bar_index+line_len, short_tp1,
+    tp1_line := line.new(bar_index, short_tp1, bar_index + line_len, short_tp1,
                          color=color.new(color.lime, 30), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, short_tp2,   bar_index+line_len, short_tp2,
-                         color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, short_stop,  bar_index+line_len, short_stop,
-                         color=color.new(color.red,  20), width=1, style=line.style_dashed)
-    label.new(bar_index, high + atr*0.5,
-              "SHORT " + zone_lbl + "
-Entry: " + str.tostring(math.round(short_fib50,0)) +
-              "
-TP2: "  + str.tostring(math.round(short_tp2,0)) +
-              "
-SL: "   + str.tostring(math.round(short_stop,0)),
-              style=label.style_label_down, color=color.new(color.red,5),
+    tp2_line := line.new(bar_index, short_tp2, bar_index + line_len, short_tp2,
+                         color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    sl_line  := line.new(bar_index, short_stop, bar_index + line_len, short_stop,
+                         color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    label.new(bar_index, high + atr * 0.5,
+              "SHORT " + zone_lbl + "\nEntry: " + str.tostring(math.round(short_fib50, 0)) +
+              "\nTP2: " + str.tostring(math.round(short_tp2, 0)) +
+              "\nSL: " + str.tostring(math.round(short_stop, 0)),
+              style=label.style_label_down, color=color.new(color.red, 5),
               textcolor=color.white, size=size.tiny)
 
-alertcondition(long_signal,  "23/29/35 LONG",  "CHoCH Time: LONG — Entry at 50% fib")
-alertcondition(short_signal, "23/29/35 SHORT", "CHoCH Time: SHORT — Entry at 50% fib")
+alertcondition(long_signal,  "23/29/35 LONG",  "CHoCH Time: LONG signal")
+alertcondition(short_signal, "23/29/35 SHORT", "CHoCH Time: SHORT signal")
 </pre>
 <script>
 function copyScript(){
