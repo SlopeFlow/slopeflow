@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html><head><title>23/29/35 CHoCH Backtest | Newsie</title>
+<style>
+body{background:#1a1a1a;color:#e0e0e0;font-family:monospace;padding:20px}
+h2{color:#00e5ff}p,li{color:#aaa;line-height:1.8}
+pre{background:#111;padding:20px;border:1px solid #333;border-radius:6px;overflow-x:auto;white-space:pre;font-size:13px;line-height:1.5}
+button{background:#00e5ff;color:#000;border:none;padding:10px 24px;font-size:15px;border-radius:4px;cursor:pointer;margin-bottom:16px;font-weight:bold}
+</style></head><body>
+<h2>23/29/35 CHoCH Reversion | Backtest</h2>
+<p>Load on <b>MNQ1! 1m</b> - Strategy Tester tab. Enters at 50% fib limit, TP2=30pts, Stop=10pts.</p>
+<button onclick="copyScript()">Copy Backtest</button>
+<pre id="code">//@version=6
+strategy("23/29/35 CHoCH Reversion | Backtest", overlay=true, max_bars_back=1000,
+         initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+         commission_type=strategy.commission.cash_per_contract, commission_value=2.05,
+         slippage=1)
+
+// INPUTS
+stop_pts  = input.float(10.0, "Stop Loss (pts)",        group="Risk")
+tp1_pts   = input.float(20.0, "TP1 Move to BE (pts)",   group="Risk")
+tp2_pts   = input.float(30.0, "TP2 Runner (pts)",       group="Risk")
+swing_len = input.int(5,      "Swing lookback bars",    group="Structure")
+min_leg   = input.float(15.0, "Min leg size (pts)",     group="Structure")
+
+// TIME ZONES (ET)
+et_hour  = hour(time, "America/New_York")
+et_min   = minute(time, "America/New_York")
+h_plus_m = et_hour + et_min
+
+in_23 = (h_plus_m &gt;= 22 and h_plus_m &lt;= 24) or (et_min &gt;= 22 and et_min &lt;= 24)
+in_29 = (h_plus_m &gt;= 28 and h_plus_m &lt;= 30) or (et_min &gt;= 28 and et_min &lt;= 30)
+in_35 = (h_plus_m &gt;= 34 and h_plus_m &lt;= 36) or (et_min &gt;= 34 and et_min &lt;= 36)
+is_time = in_23 or in_29 or in_35
+
+bull_c = close &gt; open
+bear_c = close &lt; open
+
+// SWING PIVOTS
+ph = ta.pivothigh(high, swing_len, swing_len)
+pl = ta.pivotlow(low,  swing_len, swing_len)
+
+bull_ph = not na(ph) and close[swing_len] &gt; open[swing_len]
+bear_pl = not na(pl)  and close[swing_len] &lt; open[swing_len]
+
+var float last_swing_high = na
+var float last_swing_low  = na
+
+if bull_ph
+    last_swing_high := ph
+
+if bear_pl
+    last_swing_low := pl
+
+// CHoCH detection
+lookback_high = ta.highest(high, swing_len)
+lookback_low  = ta.lowest(low,   swing_len)
+
+short_choch = is_time and bear_c and high &gt;= lookback_high[1] and not na(last_swing_low)
+long_choch  = is_time and bull_c and low  &lt;= lookback_low[1]  and not na(last_swing_high)
+
+short_leg = not na(last_swing_low)  ? high - last_swing_low  : na
+long_leg  = not na(last_swing_high) ? last_swing_high - low  : na
+
+short_valid = short_choch and not na(short_leg) and short_leg &gt;= min_leg
+long_valid  = long_choch  and not na(long_leg)  and long_leg  &gt;= min_leg
+
+var bool short_taken = false
+var bool long_taken  = false
+
+if bull_ph
+    short_taken := false
+
+if bear_pl
+    long_taken := false
+
+short_signal = short_valid and not short_taken and strategy.position_size == 0
+long_signal  = long_valid  and not long_taken  and strategy.position_size == 0
+
+if short_signal
+    short_taken := true
+
+if long_signal
+    long_taken := true
+
+// Fib levels
+short_fib50 = short_signal ? high - short_leg * 0.5 : na
+long_fib50  = long_signal  ? low  + long_leg  * 0.5 : na
+
+// Display
+plot(not na(last_swing_high) ? last_swing_high : na, "Swing High",
+     color=color.new(color.lime, 60), linewidth=1, style=plot.style_circles)
+plot(not na(last_swing_low) ? last_swing_low : na, "Swing Low",
+     color=color.new(color.red, 60), linewidth=1, style=plot.style_circles)
+
+bgcolor(is_time ? color.new(color.purple, 93) : na)
+
+plotshape(long_signal,  "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime,0), size=size.small)
+plotshape(short_signal, "Short", shape.triangledown,  location.abovebar, color=color.new(color.red, 0), size=size.small)
+
+// ENTRIES — enter at 50% fib (limit order)
+if long_signal
+    sl  = low - stop_pts
+    tp1 = long_fib50 + tp1_pts
+    tp2 = long_fib50 + tp2_pts
+    strategy.entry("Long", strategy.long, limit=long_fib50)
+    strategy.exit("Long Exit", "Long", limit=tp2, stop=sl)
+
+if short_signal
+    sl  = high + stop_pts
+    tp1 = short_fib50 - tp1_pts
+    tp2 = short_fib50 - tp2_pts
+    strategy.entry("Short", strategy.short, limit=short_fib50)
+    strategy.exit("Short Exit", "Short", limit=tp2, stop=sl)
+</pre>
+<script>
+function copyScript(){
+    navigator.clipboard.writeText(document.getElementById("code").innerText).then(function(){
+        document.querySelector("button").innerText="Copied!";
+        setTimeout(function(){document.querySelector("button").innerText="Copy Backtest"},2000);
+    });
+}
+</script></body></html>
