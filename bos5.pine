@@ -1,0 +1,44 @@
+//@version=6
+strategy("BOS Debug | Newsie", overlay=true, max_bars_back=500, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=1)
+bos_n = input.int(30, "BOS N")
+stp = input.float(30.0, "Stop")
+tp  = input.float(60.0, "TP")
+bc = close > open
+br = close < open
+ph = ta.highest(high, bos_n)
+pl = ta.lowest(low,  bos_n)
+bull_bos = bc and close > ph[1]
+bear_bos = br and close < pl[1]
+var bool bull_on = false
+var bool bear_on = false
+var float lh = na
+var float ll = na
+if bull_bos
+    bull_on := true
+    bear_on := false
+    lh := high
+    ll := pl[1]
+if bear_bos
+    bear_on := true
+    bull_on := false
+    lh := ph[1]
+    ll := low
+if bull_on and not bull_bos
+    lh := math.max(lh, high)
+if bear_on and not bear_bos
+    ll := math.min(ll, low)
+lsz = lh - ll
+z40 = ll + lsz * 0.40
+z60 = ll + lsz * 0.60
+plot(lh, "Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(ll, "Lo", color=color.new(color.red,  60), linewidth=1, style=plot.style_stepline)
+in_l = bull_on and low  <= z60 and low  >= z40 and bc and lsz >= 50
+in_s = bear_on and high >= z40 and high <= z60 and br and lsz >= 50
+plotshape(in_l, "L", shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.small)
+plotshape(in_s, "S", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.small)
+if in_l and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("LX", "Long", limit=close+tp, stop=close-stp)
+if in_s and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("SX", "Short", limit=close-tp, stop=close+stp)
