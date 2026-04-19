@@ -1,8 +1,8 @@
 //@version=6
 indicator("Zone Reversal v8 | Newsie", overlay=true, max_bars_back=1000)
-stp = input.float(20.0, "Stop pts", group="R")
-tp = input.float(80.0, "TP pts", group="R")
-be = input.float(40.0, "BE at pts", group="R")
+stp = input.float(30.0, "Stop pts", group="R")
+tp = input.float(60.0, "TP pts", group="R")
+be = input.float(30.0, "BE at pts", group="R")
 ml = input.float(50.0, "Min leg pts", group="S")
 sw = input.int(15, "Swing bars", group="S")
 cd = input.int(60, "Cooldown bars", group="S")
