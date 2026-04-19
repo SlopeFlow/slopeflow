@@ -1,0 +1,72 @@
+//@version=6
+strategy("Zone Reversal BT | Newsie", overlay=true, max_bars_back=1000, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=1)
+stp = input.float(10.0, "Stop", group="R")
+tp1 = input.float(20.0, "TP1 BE", group="R")
+tp2 = input.float(30.0, "TP2", group="R")
+ml = input.float(50.0, "Min leg", group="S")
+sw = input.int(15, "Swing bars", group="S")
+cd = input.int(60, "Cooldown bars", group="S")
+eh = hour(time, "America/New_York")
+em = minute(time, "America/New_York")
+s = eh + em
+d = em - eh
+t23 = ((s>=22 and s<=24) or (d>=22 and d<=24) or (em>=22 and em<=24) or (eh==2 and em>=2 and em<=4))
+t29 = ((s>=28 and s<=30) or (d>=28 and d<=30) or (em>=28 and em<=30) or (eh==2 and em>=8 and em<=9))
+t35 = ((s>=34 and s<=36) or (d>=34 and d<=36) or (em>=34 and em<=36) or (eh==3 and em>=4 and em<=6))
+tb = t23 or t29 or t35
+bc = close > open
+br = close < open
+ph = ta.pivothigh(high, sw, sw)
+pl = ta.pivotlow(low, sw, sw)
+vph = not na(ph) and close[sw] > open[sw]
+vpl = not na(pl) and close[sw] < open[sw]
+var float lh = na
+var float lo = na
+var float z5 = na
+var bool la = false
+var bool sa = false
+var int last_sig = -999
+if timeframe.change("D")
+    lh := na
+    lo := na
+    z5 := na
+    la := false
+    sa := false
+if vph
+    if not la or ph > lh
+        if na(lo)
+            lo := low[sw]
+        la := true
+        sa := false
+    lh := ph
+    if not na(lo) and lh - lo >= ml
+        z5 := (lh + lo) / 2
+if vpl
+    if not sa or pl < lo
+        if na(lh)
+            lh := high[sw]
+        sa := true
+        la := false
+    lo := pl
+    if not na(lh) and lh - lo >= ml
+        z5 := (lh + lo) / 2
+plot(z5, "Mid", color=color.new(color.yellow, 0), linewidth=2)
+plot(lh, "Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(lo, "Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+zt = 8.0
+a5l = la and not na(z5) and low<=z5+zt and low>=z5-zt
+a5s = sa and not na(z5) and high>=z5-zt and high<=z5+zt
+cd_ok = bar_index - last_sig > cd
+ls = tb and a5l and bc and cd_ok and strategy.position_size == 0
+ss = tb and a5s and br and cd_ok and strategy.position_size == 0
+if ls or ss
+    last_sig := bar_index
+bgcolor(tb ? color.new(color.purple, 93) : na)
+plotshape(ls, "L", shape.triangleup, location.belowbar, color=color.new(color.lime, 0), size=size.small)
+plotshape(ss, "S", shape.triangledown, location.abovebar, color=color.new(color.red, 0), size=size.small)
+if ls
+    strategy.entry("Long", strategy.long)
+    strategy.exit("LX", "Long", limit=close+tp2, stop=close-stp)
+if ss
+    strategy.entry("Short", strategy.short)
+    strategy.exit("SX", "Short", limit=close-tp2, stop=close+stp)
