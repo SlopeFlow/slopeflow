@@ -5,7 +5,7 @@ tp1 = input.float(20.0, "TP1", group="R")
 tp2 = input.float(30.0, "TP2", group="R")
 ll = input.int(100, "Lines", group="D")
 sw = input.int(15, "Swing bars", group="D")
-ml = input.float(25.0, "Min leg pts", group="D")
+ml = input.float(50.0, "Min leg pts", group="D")
 eh = hour(time, "America/New_York")
 em = minute(time, "America/New_York")
 s = eh + em
@@ -57,7 +57,7 @@ zt = 8.0
 a5l = la and not na(z5) and low<=z5+zt and low>=z5-zt
 a5s = sa and not na(z5) and high>=z5-zt and high<=z5+zt
 var int last_sig = -999
-cd = bar_index - last_sig > 30
+cd = bar_index - last_sig > 60
 ls = tb and a5l and bc and cd
 ss = tb and a5s and br and cd
 bgcolor(tb ? color.new(color.purple, 93) : na)
