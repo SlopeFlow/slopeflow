@@ -23,31 +23,41 @@ var string bos_dir = na
 var float  bos_ext = na
 var int    bos_bar = -999
 var int    last_sig = -999
+var float  leg_hi_track = na
+var float  leg_lo_track = na
 if bull_bos
     bos_dir := "bull"
     bos_ext := prior_low[1]
     bos_bar := bar_index
+    leg_hi_track := high
+    leg_lo_track := bos_ext
 if bear_bos
     bos_dir := "bear"
     bos_ext := prior_high[1]
     bos_bar := bar_index
-leg_hi = bos_dir == "bull" ? ta.highest(high, bar_index - bos_bar + 1) : bos_ext
-leg_lo = bos_dir == "bear" ? ta.lowest(low,   bar_index - bos_bar + 1) : bos_ext
-leg_size = not na(leg_hi) and not na(leg_lo) ? leg_hi - leg_lo : na
-z40 = not na(leg_size) ? leg_lo + leg_size * 0.40 : na
-z60 = not na(leg_size) ? leg_lo + leg_size * 0.60 : na
-plot(not na(leg_hi) ? leg_hi : na, "Leg Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
-plot(not na(leg_lo) ? leg_lo : na, "Leg Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
-plot(not na(z40) ? (z40+z60)/2 : na, "50%", color=color.new(color.yellow, 0), linewidth=1)
+    leg_hi_track := bos_ext
+    leg_lo_track := low
+if bos_dir == "bull" and not bull_bos
+    leg_hi_track := math.max(leg_hi_track, high)
+if bos_dir == "bear" and not bear_bos
+    leg_lo_track := math.min(leg_lo_track, low)
+leg_size = leg_hi_track - leg_lo_track
+z40 = leg_lo_track + leg_size * 0.40
+z60 = leg_lo_track + leg_size * 0.60
+z50 = leg_lo_track + leg_size * 0.50
+plot(not na(bos_dir) ? leg_hi_track : na, "Leg Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(bos_dir) ? leg_lo_track : na, "Leg Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(bos_dir) ? z50 : na, "50%", color=color.new(color.yellow, 0), linewidth=1)
+bgcolor(tb ? color.new(color.purple, 93) : na)
 age_ok = bar_index - bos_bar > 15
 cd_ok  = bar_index - last_sig > cd
-in_zone_l = not na(z40) and not na(z60) and low  <= z60 and low  >= z40
-in_zone_s = not na(z40) and not na(z60) and high >= z40 and high <= z60
-ls = tb and bos_dir == "bull" and in_zone_l and bc and age_ok and cd_ok and not na(leg_size) and leg_size >= ml and strategy.position_size == 0
-ss = tb and bos_dir == "bear" and in_zone_s and br and age_ok and cd_ok and not na(leg_size) and leg_size >= ml and strategy.position_size == 0
+size_ok = leg_size >= ml
+in_zone_l = low  <= z60 and low  >= z40
+in_zone_s = high >= z40 and high <= z60
+ls = tb and bos_dir == "bull" and in_zone_l and bc and age_ok and cd_ok and size_ok and strategy.position_size == 0
+ss = tb and bos_dir == "bear" and in_zone_s and br and age_ok and cd_ok and size_ok and strategy.position_size == 0
 if ls or ss
     last_sig := bar_index
-bgcolor(tb ? color.new(color.purple, 93) : na)
 plotshape(ls, "L", shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.small)
 plotshape(ss, "S", shape.triangledown,  location.abovebar, color=color.new(color.red, 0), size=size.small)
 if ls

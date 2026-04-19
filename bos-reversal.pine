@@ -25,63 +25,60 @@ var string bos_dir = na
 var float  bos_ext = na
 var int    bos_bar = -999
 var int    last_sig = -999
+var float  leg_hi_track = na
+var float  leg_lo_track = na
 if bull_bos
     bos_dir := "bull"
     bos_ext := prior_low[1]
     bos_bar := bar_index
+    leg_hi_track := high
+    leg_lo_track := bos_ext
 if bear_bos
     bos_dir := "bear"
     bos_ext := prior_high[1]
     bos_bar := bar_index
-var line bos_line = na
-if bull_bos
-    line.delete(bos_line)
-    bos_line := line.new(bar_index, prior_low[1], bar_index + ll, prior_low[1], color=color.new(color.orange, 20), width=1, style=line.style_dotted)
-if bear_bos
-    line.delete(bos_line)
-    bos_line := line.new(bar_index, prior_high[1], bar_index + ll, prior_high[1], color=color.new(color.orange, 20), width=1, style=line.style_dotted)
-leg_hi = bos_dir == "bull" ? ta.highest(high, bar_index - bos_bar + 1) : bos_ext
-leg_lo = bos_dir == "bear" ? ta.lowest(low,   bar_index - bos_bar + 1) : bos_ext
-leg_size = not na(leg_hi) and not na(leg_lo) ? leg_hi - leg_lo : na
-z40 = not na(leg_size) ? leg_lo + leg_size * 0.40 : na
-z50 = not na(leg_size) ? leg_lo + leg_size * 0.50 : na
-z60 = not na(leg_size) ? leg_lo + leg_size * 0.60 : na
-plot(z50, "50%", color=color.new(color.yellow, 0), linewidth=2)
-plot(z40, "40%", color=color.new(color.white, 70), linewidth=1)
-plot(z60, "60%", color=color.new(color.white, 70), linewidth=1)
-plot(leg_hi, "Leg Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
-plot(leg_lo, "Leg Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+    leg_hi_track := bos_ext
+    leg_lo_track := low
+if bos_dir == "bull" and not bull_bos
+    leg_hi_track := math.max(leg_hi_track, high)
+if bos_dir == "bear" and not bear_bos
+    leg_lo_track := math.min(leg_lo_track, low)
+leg_size = leg_hi_track - leg_lo_track
+z40 = leg_lo_track + leg_size * 0.40
+z50 = leg_lo_track + leg_size * 0.50
+z60 = leg_lo_track + leg_size * 0.60
+plot(not na(bos_dir) ? leg_hi_track : na, "Leg Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(bos_dir) ? leg_lo_track : na, "Leg Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(bos_dir) ? z50 : na, "50%", color=color.new(color.yellow, 0), linewidth=2)
+plot(not na(bos_dir) ? z40 : na, "40%", color=color.new(color.white, 70), linewidth=1)
+plot(not na(bos_dir) ? z60 : na, "60%", color=color.new(color.white, 70), linewidth=1)
+bgcolor(tb ? color.new(color.purple, 93) : na)
 age_ok = bar_index - bos_bar > 15
 cd_ok  = bar_index - last_sig > cd
-in_zone_l = not na(z40) and not na(z60) and low  <= z60 and low  >= z40
-in_zone_s = not na(z40) and not na(z60) and high >= z40 and high <= z60
-ls = tb and bos_dir == "bull" and in_zone_l and bc and age_ok and cd_ok and not na(leg_size) and leg_size >= ml
-ss = tb and bos_dir == "bear" and in_zone_s and br and age_ok and cd_ok and not na(leg_size) and leg_size >= ml
+size_ok = leg_size >= ml
+in_zone_l = low  <= z60 and low  >= z40
+in_zone_s = high >= z40 and high <= z60
+ls = tb and bos_dir == "bull" and in_zone_l and bc and age_ok and cd_ok and size_ok
+ss = tb and bos_dir == "bear" and in_zone_s and br and age_ok and cd_ok and size_ok
 if ls or ss
     last_sig := bar_index
-bgcolor(tb ? color.new(color.purple, 93) : na)
-plotshape(bull_bos, "Bull BOS", shape.triangleup,   location.belowbar, color=color.new(color.orange, 20), size=size.tiny)
-plotshape(bear_bos, "Bear BOS", shape.triangledown,  location.abovebar, color=color.new(color.orange, 20), size=size.tiny)
+plotshape(bull_bos, "Bull BOS", shape.triangleup,   location.belowbar, color=color.new(color.orange, 30), size=size.tiny)
+plotshape(bear_bos, "Bear BOS", shape.triangledown,  location.abovebar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(ls, "Long", shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(ss, "Short", shape.triangledown, location.abovebar, color=color.new(color.red, 0), size=size.normal)
 var line t1 = na
-var line t2 = na
 var line sl = na
 atr = ta.atr(14)
 if ls
     line.delete(t1)
-    line.delete(t2)
     line.delete(sl)
     t1 := line.new(bar_index, close+tp,  bar_index+ll, close+tp,  color=color.new(color.lime, 0), width=2, style=line.style_dashed)
-    t2 := line.new(bar_index, close+tp/2, bar_index+ll, close+tp/2, color=color.new(color.lime, 40), width=1, style=line.style_dotted)
     sl := line.new(bar_index, close-stp, bar_index+ll, close-stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     label.new(bar_index, low-atr*0.5, "L"+tz, style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
 if ss
     line.delete(t1)
-    line.delete(t2)
     line.delete(sl)
     t1 := line.new(bar_index, close-tp,  bar_index+ll, close-tp,  color=color.new(color.lime, 0), width=2, style=line.style_dashed)
-    t2 := line.new(bar_index, close-tp/2, bar_index+ll, close-tp/2, color=color.new(color.lime, 40), width=1, style=line.style_dotted)
     sl := line.new(bar_index, close+stp, bar_index+ll, close+stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     label.new(bar_index, high+atr*0.5, "S"+tz, style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
 alertcondition(ls, "BOS LONG",  "BOS Reversal: LONG")
