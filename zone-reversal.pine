@@ -50,7 +50,7 @@ if vpl
     lo := pl
     if not na(lh) and lh - lo >= ml
         z5 := (lh + lo) / 2
-plot(z5, "Mid", color=color.new(color.white, 40), linewidth=1)
+plot(z5, "Mid", color=color.new(color.yellow, 0), linewidth=2)
 plot(lh, "Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
 plot(lo, "Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
 zt = 8.0
