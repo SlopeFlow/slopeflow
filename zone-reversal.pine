@@ -1,11 +1,12 @@
 //@version=6
-indicator("Zone Reversal v7 | Newsie", overlay=true, max_bars_back=1000)
-stp = input.float(10.0, "Stop", group="R")
-tp1 = input.float(20.0, "TP1", group="R")
-tp2 = input.float(30.0, "TP2", group="R")
-ll = input.int(100, "Lines", group="D")
-sw = input.int(15, "Swing bars", group="D")
-ml = input.float(50.0, "Min leg pts", group="D")
+indicator("Zone Reversal v8 | Newsie", overlay=true, max_bars_back=1000)
+stp = input.float(20.0, "Stop pts", group="R")
+tp = input.float(80.0, "TP pts", group="R")
+be = input.float(40.0, "BE at pts", group="R")
+ml = input.float(50.0, "Min leg pts", group="S")
+sw = input.int(15, "Swing bars", group="S")
+cd = input.int(60, "Cooldown bars", group="S")
+ll = input.int(150, "Line length", group="D")
 eh = hour(time, "America/New_York")
 em = minute(time, "America/New_York")
 s = eh + em
@@ -26,6 +27,7 @@ var float lo = na
 var float z5 = na
 var bool la = false
 var bool sa = false
+var int last_sig = -999
 if timeframe.change("D")
     lh := na
     lo := na
@@ -50,42 +52,45 @@ if vpl
     lo := pl
     if not na(lh) and lh - lo >= ml
         z5 := (lh + lo) / 2
-plot(z5, "Mid", color=color.new(color.yellow, 0), linewidth=2)
+plot(z5, "50pct", color=color.new(color.yellow, 0), linewidth=2)
 plot(lh, "Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
 plot(lo, "Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
-zt = 8.0
-a5l = la and not na(z5) and low<=z5+zt and low>=z5-zt
-a5s = sa and not na(z5) and high>=z5-zt and high<=z5+zt
-var int last_sig = -999
-cd = bar_index - last_sig > 60
-ls = tb and a5l and bc and cd
-ss = tb and a5s and br and cd
+leg_size = not na(lh) and not na(lo) ? lh - lo : na
+z40 = not na(leg_size) ? lo + leg_size * 0.40 : na
+z60 = not na(leg_size) ? lo + leg_size * 0.60 : na
+plot(z40, "40pct", color=color.new(color.white, 70), linewidth=1, style=plot.style_line)
+plot(z60, "60pct", color=color.new(color.white, 70), linewidth=1, style=plot.style_line)
+cd_ok = bar_index - last_sig > cd
+in_band_l = la and not na(z40) and not na(z60) and low <= z60 and low >= z40
+in_band_s = sa and not na(z40) and not na(z60) and high >= z40 and high <= z60
+ls = tb and in_band_l and bc and cd_ok
+ss = tb and in_band_s and br and cd_ok
+if ls or ss
+    last_sig := bar_index
 bgcolor(tb ? color.new(color.purple, 93) : na)
 plotshape(not na(ph) and not vph, "BH", shape.xcross, location.abovebar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(not na(pl) and not vpl, "BL", shape.xcross, location.belowbar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(ls, "L", shape.triangleup, location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(ss, "S", shape.triangledown, location.abovebar, color=color.new(color.red, 0), size=size.normal)
-var line a = na
-var line b = na
-var line c = na
+var line t1 = na
+var line t2 = na
+var line sl = na
 atr = ta.atr(14)
 if ls
-    line.delete(a)
-    line.delete(b)
-    line.delete(c)
-    a := line.new(bar_index, close+tp1, bar_index+ll, close+tp1, color=color.new(color.lime, 40), width=1, style=line.style_dashed)
-    b := line.new(bar_index, close+tp2, bar_index+ll, close+tp2, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
-    c := line.new(bar_index, close-stp, bar_index+ll, close-stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    line.delete(t1)
+    line.delete(t2)
+    line.delete(sl)
+    t1 := line.new(bar_index, close+be, bar_index+ll, close+be, color=color.new(color.lime, 50), width=1, style=line.style_dotted)
+    t2 := line.new(bar_index, close+tp, bar_index+ll, close+tp, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    sl := line.new(bar_index, close-stp, bar_index+ll, close-stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     label.new(bar_index, low-atr*0.5, "L"+tz, style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
 if ss
-    line.delete(a)
-    line.delete(b)
-    line.delete(c)
-    a := line.new(bar_index, close-tp1, bar_index+ll, close-tp1, color=color.new(color.lime, 40), width=1, style=line.style_dashed)
-    b := line.new(bar_index, close-tp2, bar_index+ll, close-tp2, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
-    c := line.new(bar_index, close+stp, bar_index+ll, close+stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
+    line.delete(t1)
+    line.delete(t2)
+    line.delete(sl)
+    t1 := line.new(bar_index, close-be, bar_index+ll, close-be, color=color.new(color.lime, 50), width=1, style=line.style_dotted)
+    t2 := line.new(bar_index, close-tp, bar_index+ll, close-tp, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
+    sl := line.new(bar_index, close+stp, bar_index+ll, close+stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     label.new(bar_index, high+atr*0.5, "S"+tz, style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
-if ls or ss
-    last_sig := bar_index
 alertcondition(ls, "LONG", "Zone: LONG")
 alertcondition(ss, "SHORT", "Zone: SHORT")

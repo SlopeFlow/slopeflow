@@ -1,9 +1,9 @@
 //@version=6
-strategy("Zone Reversal BT | Newsie", overlay=true, max_bars_back=1000, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=1)
-stp = input.float(10.0, "Stop", group="R")
-tp1 = input.float(20.0, "TP1 BE", group="R")
-tp2 = input.float(30.0, "TP2", group="R")
-ml = input.float(50.0, "Min leg", group="S")
+strategy("Zone Reversal BT v8 | Newsie", overlay=true, max_bars_back=1000, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=1)
+stp = input.float(20.0, "Stop pts", group="R")
+tp = input.float(80.0, "TP pts", group="R")
+be = input.float(40.0, "BE at pts", group="R")
+ml = input.float(50.0, "Min leg pts", group="S")
 sw = input.int(15, "Swing bars", group="S")
 cd = input.int(60, "Cooldown bars", group="S")
 eh = hour(time, "America/New_York")
@@ -50,15 +50,19 @@ if vpl
     lo := pl
     if not na(lh) and lh - lo >= ml
         z5 := (lh + lo) / 2
-plot(z5, "Mid", color=color.new(color.yellow, 0), linewidth=2)
+plot(z5, "50pct", color=color.new(color.yellow, 0), linewidth=2)
 plot(lh, "Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
 plot(lo, "Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
-zt = 8.0
-a5l = la and not na(z5) and low<=z5+zt and low>=z5-zt
-a5s = sa and not na(z5) and high>=z5-zt and high<=z5+zt
+leg_size = not na(lh) and not na(lo) ? lh - lo : na
+z40 = not na(leg_size) ? lo + leg_size * 0.40 : na
+z60 = not na(leg_size) ? lo + leg_size * 0.60 : na
+plot(z40, "40pct", color=color.new(color.white, 70), linewidth=1)
+plot(z60, "60pct", color=color.new(color.white, 70), linewidth=1)
 cd_ok = bar_index - last_sig > cd
-ls = tb and a5l and bc and cd_ok and strategy.position_size == 0
-ss = tb and a5s and br and cd_ok and strategy.position_size == 0
+in_band_l = la and not na(z40) and not na(z60) and low <= z60 and low >= z40
+in_band_s = sa and not na(z40) and not na(z60) and high >= z40 and high <= z60
+ls = tb and in_band_l and bc and cd_ok and strategy.position_size == 0
+ss = tb and in_band_s and br and cd_ok and strategy.position_size == 0
 if ls or ss
     last_sig := bar_index
 bgcolor(tb ? color.new(color.purple, 93) : na)
@@ -66,7 +70,7 @@ plotshape(ls, "L", shape.triangleup, location.belowbar, color=color.new(color.li
 plotshape(ss, "S", shape.triangledown, location.abovebar, color=color.new(color.red, 0), size=size.small)
 if ls
     strategy.entry("Long", strategy.long)
-    strategy.exit("LX", "Long", limit=close+tp2, stop=close-stp)
+    strategy.exit("LX", "Long", limit=close+tp, stop=close-stp)
 if ss
     strategy.entry("Short", strategy.short)
-    strategy.exit("SX", "Short", limit=close-tp2, stop=close+stp)
+    strategy.exit("SX", "Short", limit=close-tp, stop=close+stp)
