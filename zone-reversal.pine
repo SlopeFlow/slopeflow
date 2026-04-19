@@ -6,6 +6,7 @@ be = input.float(30.0, "BE at pts", group="R")
 ml = input.float(70.0, "Min leg pts", group="S")
 sw = input.int(15, "Swing bars", group="S")
 cd = input.int(60, "Cooldown bars", group="S")
+ma = input.int(15, "Min leg age bars", group="S")
 ll = input.int(150, "Line length", group="D")
 eh = hour(time, "America/New_York")
 em = minute(time, "America/New_York")
@@ -28,6 +29,7 @@ var float z5 = na
 var bool la = false
 var bool sa = false
 var int last_sig = -999
+var int leg_bar = -999
 if timeframe.change("D")
     lh := na
     lo := na
@@ -43,6 +45,7 @@ if vph
     lh := ph
     if not na(lo) and lh - lo >= ml
         z5 := (lh + lo) / 2
+        leg_bar := bar_index
 if vpl
     if not sa or pl < lo
         if na(lh)
@@ -52,6 +55,7 @@ if vpl
     lo := pl
     if not na(lh) and lh - lo >= ml
         z5 := (lh + lo) / 2
+        leg_bar := bar_index
 plot(z5, "50pct", color=color.new(color.yellow, 0), linewidth=2)
 plot(lh, "Hi", color=color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
 plot(lo, "Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
@@ -63,8 +67,9 @@ plot(z60, "60pct", color=color.new(color.white, 70), linewidth=1, style=plot.sty
 cd_ok = bar_index - last_sig > cd
 in_band_l = la and not na(z40) and not na(z60) and low <= z60 and low >= z40
 in_band_s = sa and not na(z40) and not na(z60) and high >= z40 and high <= z60
-ls = tb and in_band_l and bc and cd_ok
-ss = tb and in_band_s and br and cd_ok
+age_ok = bar_index - leg_bar > ma
+ls = tb and in_band_l and bc and cd_ok and age_ok
+ss = tb and in_band_s and br and cd_ok and age_ok
 if ls or ss
     last_sig := bar_index
 bgcolor(tb ? color.new(color.purple, 93) : na)
