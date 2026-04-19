@@ -56,8 +56,10 @@ plot(lo, "Lo", color=color.new(color.red, 60), linewidth=1, style=plot.style_ste
 zt = 8.0
 a5l = la and not na(z5) and low<=z5+zt and low>=z5-zt
 a5s = sa and not na(z5) and high>=z5-zt and high<=z5+zt
-ls = tb and a5l and bc
-ss = tb and a5s and br
+var int last_sig = -999
+cd = bar_index - last_sig > 30
+ls = tb and a5l and bc and cd
+ss = tb and a5s and br and cd
 bgcolor(tb ? color.new(color.purple, 93) : na)
 plotshape(not na(ph) and not vph, "BH", shape.xcross, location.abovebar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(not na(pl) and not vpl, "BL", shape.xcross, location.belowbar, color=color.new(color.orange, 30), size=size.tiny)
@@ -83,5 +85,7 @@ if ss
     b := line.new(bar_index, close-tp2, bar_index+ll, close-tp2, color=color.new(color.lime, 0), width=2, style=line.style_dashed)
     c := line.new(bar_index, close+stp, bar_index+ll, close+stp, color=color.new(color.red, 20), width=1, style=line.style_dashed)
     label.new(bar_index, high+atr*0.5, "S"+tz, style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
+if ls or ss
+    last_sig := bar_index
 alertcondition(ls, "LONG", "Zone: LONG")
 alertcondition(ss, "SHORT", "Zone: SHORT")
