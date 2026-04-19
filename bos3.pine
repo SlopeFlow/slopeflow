@@ -1,0 +1,58 @@
+//@version=6
+strategy("BOS2 | Newsie", overlay=true, max_bars_back=1000, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=1)
+bos_n  = input.int(30,   "BOS Lookback",  group="S")
+ml     = input.float(50.0,"Min leg pts",  group="S")
+stp    = input.float(30.0,"Stop pts",     group="R")
+tp     = input.float(60.0,"TP pts",       group="R")
+cd     = input.int(60,   "Cooldown bars", group="S")
+bc = close > open
+br = close < open
+ph = ta.highest(high, bos_n)
+pl = ta.lowest(low,  bos_n)
+bull_bos = bc and close > ph[1]
+bear_bos = br and close < pl[1]
+var bool   bull_active = false
+var bool   bear_active = false
+var float  leg_hi = na
+var float  leg_lo = na
+var int    bos_bar = -999
+var int    last_sig = -999
+if bull_bos
+    bull_active := true
+    bear_active := false
+    leg_hi := high
+    leg_lo := pl[1]
+    bos_bar := bar_index
+if bear_bos
+    bear_active := true
+    bull_active := false
+    leg_hi := ph[1]
+    leg_lo := low
+    bos_bar := bar_index
+if bull_active and not bull_bos
+    leg_hi := math.max(leg_hi, high)
+if bear_active and not bear_bos
+    leg_lo := math.min(leg_lo, low)
+lsz = leg_hi - leg_lo
+z40 = leg_lo + lsz * 0.40
+z60 = leg_lo + lsz * 0.60
+plot(bull_active or bear_active ? leg_hi : na, "Hi", color=color.new(color.lime,60), linewidth=1, style=plot.style_stepline)
+plot(bull_active or bear_active ? leg_lo : na, "Lo", color=color.new(color.red,60),  linewidth=1, style=plot.style_stepline)
+plot(bull_active or bear_active ? (z40+z60)/2 : na, "50", color=color.new(color.yellow,0), linewidth=1)
+age_ok  = bar_index - bos_bar > 3
+cd_ok   = bar_index - last_sig > cd
+size_ok = lsz >= ml
+in_l = low  <= z60 and low  >= z40
+in_s = high >= z40 and high <= z60
+ls = bull_active and in_l and bc and age_ok and cd_ok and size_ok and strategy.position_size == 0
+ss = bear_active and in_s and br and age_ok and cd_ok and size_ok and strategy.position_size == 0
+if ls or ss
+    last_sig := bar_index
+plotshape(ls, "L", shape.triangleup,   location.belowbar, color=color.new(color.lime,0), size=size.small)
+plotshape(ss, "S", shape.triangledown, location.abovebar, color=color.new(color.red,0),  size=size.small)
+if ls
+    strategy.entry("Long", strategy.long)
+    strategy.exit("LX", "Long", limit=close+tp, stop=close-stp)
+if ss
+    strategy.entry("Short", strategy.short)
+    strategy.exit("SX", "Short", limit=close-tp, stop=close+stp)
