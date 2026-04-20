@@ -1,112 +1,73 @@
 //@version=6
 indicator("PL Zone + 23/29/35 | Newsie", overlay=true, max_bars_back=1000)
-
-// INPUTS
-tf          = input.timeframe("5", "Open Zone Timeframe", group="Open Zone")
-fib_tol     = input.float(5.0,  "100% Fib tolerance (pts)", group="Setup")
-show_fibs   = input.bool(true,  "Show All Fib Levels", group="Display")
-ll          = input.int(500,    "Line length", group="Display")
-
-// TIME BARS (ET)
+tf       = input.timeframe("5", "Open Zone TF", group="Open Zone")
+fib_tol  = input.float(5.0, "100% tolerance pts", group="Setup")
+show_fibs = input.bool(true, "Show Fib Levels", group="Display")
+ll       = input.int(500, "Line length", group="Display")
 eh = hour(time, "America/New_York")
 em = minute(time, "America/New_York")
 s = eh + em
 d = em - eh
-t23 = ((s>=22 and s<=24) or (d>=22 and d<=24) or (em>=22 and em<=24) or (eh==2 and em>=2 and em<=4))
+t23 = ((s>=22 and s<=24) or (d>=22 and d<=24) or (em>=22 and em<=24) or (eh==2 and em>=2 and em>=2 and em<=4))
 t29 = ((s>=28 and s<=30) or (d>=28 and d<=30) or (em>=28 and em<=30) or (eh==2 and em>=8 and em<=9))
 t35 = ((s>=34 and s<=36) or (d>=34 and d<=36) or (em>=34 and em<=36) or (eh==3 and em>=4 and em<=6))
-tb   = t23 or t29 or t35
-tz   = t23 ? "23" : t29 ? "29" : "35"
-bc   = close > open
-br   = close < open
-
-// OPEN ZONE — first candle of each session on selected TF
-open_high = request.security(syminfo.tickerid, tf, high[0],  gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-open_low  = request.security(syminfo.tickerid, tf, low[0],   gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-
-// Track session open candle (resets on new day)
-is_new_session = ta.change(time(tf)) != 0
-
-var float sess_open_high = na
-var float sess_open_low  = na
-var bool  first_candle   = false
-
-if is_new_session
-    sess_open_high := open_high
-    sess_open_low  := open_low
-    first_candle   := true
-else
-    first_candle   := false
-
-// FIB LEVELS from open candle
-// Range = sess_open_high - sess_open_low
-// 100% UP = sess_open_high + range (extension above)
-// 100% DN = sess_open_low  - range (extension below)
-// 50%  = midpoint of open candle
-// 23%  = 23% from low toward high
-
-fib_range  = not na(sess_open_high) ? sess_open_high - sess_open_low : na
-fib_100u   = not na(fib_range) ? sess_open_high + fib_range : na   // 100% above
-fib_100d   = not na(fib_range) ? sess_open_low  - fib_range : na   // 100% below
-fib_110u   = not na(fib_range) ? sess_open_high + fib_range * 1.1 : na  // 110% SL
-fib_110d   = not na(fib_range) ? sess_open_low  - fib_range * 1.1 : na
-fib_50     = not na(fib_range) ? (sess_open_high + sess_open_low) / 2 : na
-fib_23     = not na(fib_range) ? sess_open_low + fib_range * 0.236 : na
-fib_62     = not na(fib_range) ? sess_open_low + fib_range * 0.618 : na
-fib_79     = not na(fib_range) ? sess_open_low + fib_range * 0.786 : na
-
-// Open zone box
-plot(not na(sess_open_high) ? sess_open_high : na, "Open High", color=color.new(#fff59d, 0), linewidth=2, style=plot.style_stepline)
-plot(not na(sess_open_low)  ? sess_open_low  : na, "Open Low",  color=color.new(#fff59d, 0), linewidth=2, style=plot.style_stepline)
-
-// Fib levels
-plot(show_fibs ? fib_100u : na, "100% Up",  color=color.new(color.red,   20), linewidth=1, style=plot.style_line)
-plot(show_fibs ? fib_110u : na, "110% Up",  color=color.new(color.red,   50), linewidth=1, style=plot.style_dashed)
-plot(show_fibs ? fib_100d : na, "100% Dn",  color=color.new(color.lime,  20), linewidth=1, style=plot.style_line)
-plot(show_fibs ? fib_110d : na, "110% Dn",  color=color.new(color.lime,  50), linewidth=1, style=plot.style_dashed)
-plot(show_fibs ? fib_50   : na, "50%",      color=color.new(color.white, 30), linewidth=1, style=plot.style_dashed)
-plot(show_fibs ? fib_23   : na, "23.6%",    color=color.new(color.aqua,  40), linewidth=1, style=plot.style_dashed)
-plot(show_fibs ? fib_62   : na, "61.8%",    color=color.new(color.orange,40), linewidth=1, style=plot.style_dashed)
-plot(show_fibs ? fib_79   : na, "78.6%",    color=color.new(color.purple,40), linewidth=1, style=plot.style_dashed)
-
-// TIME BAR HIGHLIGHT
+tb  = t23 or t29 or t35
+tz  = t23 ? "23" : t29 ? "29" : "35"
+bc  = close > open
+br  = close < open
+oh = request.security(syminfo.tickerid, tf, high[0],  gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+ol = request.security(syminfo.tickerid, tf, low[0],   gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+new_sess = ta.change(time(tf)) != 0
+var float soh = na
+var float sol = na
+if new_sess
+    soh := oh
+    sol := ol
+fr   = not na(soh) ? soh - sol : na
+f100u = not na(fr) ? soh + fr        : na
+f110u = not na(fr) ? soh + fr * 1.1  : na
+f100d = not na(fr) ? sol - fr        : na
+f110d = not na(fr) ? sol - fr * 1.1  : na
+f50   = not na(fr) ? (soh + sol) / 2 : na
+f236  = not na(fr) ? sol + fr * 0.236: na
+f618  = not na(fr) ? sol + fr * 0.618: na
+f786  = not na(fr) ? sol + fr * 0.786: na
+plot(not na(soh) ? soh : na, "Open High", color=color.new(#fff59d, 0), linewidth=2, style=plot.style_stepline)
+plot(not na(sol) ? sol : na, "Open Low",  color=color.new(#fff59d, 0), linewidth=2, style=plot.style_stepline)
+plot(show_fibs ? f100u : na, "100% Up",  color=color.new(color.red,    20), linewidth=1)
+plot(show_fibs ? f110u : na, "110% Up",  color=color.new(color.red,    50), linewidth=1)
+plot(show_fibs ? f100d : na, "100% Dn",  color=color.new(color.lime,   20), linewidth=1)
+plot(show_fibs ? f110d : na, "110% Dn",  color=color.new(color.lime,   50), linewidth=1)
+plot(show_fibs ? f50   : na, "50%",      color=color.new(color.white,  30), linewidth=1)
+plot(show_fibs ? f236  : na, "23.6%",    color=color.new(color.aqua,   40), linewidth=1)
+plot(show_fibs ? f618  : na, "61.8%",    color=color.new(color.orange, 40), linewidth=1)
+plot(show_fibs ? f786  : na, "78.6%",    color=color.new(color.purple, 40), linewidth=1)
 bgcolor(tb ? color.new(color.purple, 93) : na)
-
-// SIGNAL: Price at 100% fib + time bar + exhaustion candle
-at_100u = not na(fib_100u) and math.abs(high - fib_100u) <= fib_tol
-at_100d = not na(fib_100d) and math.abs(low  - fib_100d) <= fib_tol
-
-// SHORT setup: at 100% above + time bar + BULL candle (exhaustion top)
+at_100u = not na(f100u) and math.abs(high - f100u) <= fib_tol
+at_100d = not na(f100d) and math.abs(low  - f100d) <= fib_tol
 short_sig = tb and at_100u and bc
-
-// LONG setup: at 100% below + time bar + BEAR candle (exhaustion bottom)
 long_sig  = tb and at_100d and br
-
 plotshape(short_sig, "PL Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
 plotshape(long_sig,  "PL Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
-
-var line tp1_line = na
-var line tp2_line = na
-var line sl_line  = na
+var line tp1 = na
+var line tp2 = na
+var line sl  = na
 atr = ta.atr(14)
-
 if short_sig
-    line.delete(tp1_line)
-    line.delete(tp2_line)
-    line.delete(sl_line)
-    tp1_line := line.new(bar_index, fib_50,   bar_index+ll, fib_50,   color=color.new(color.lime, 20), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, fib_23,   bar_index+ll, fib_23,   color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, fib_110u, bar_index+ll, fib_110u, color=color.new(color.red,  20), width=1, style=line.style_dashed)
+    line.delete(tp1)
+    line.delete(tp2)
+    line.delete(sl)
+    tp1 := line.new(bar_index, f50,   bar_index+ll, f50,   color=color.new(color.lime, 20), width=1)
+    tp2 := line.new(bar_index, f236,  bar_index+ll, f236,  color=color.new(color.lime, 0),  width=2)
+    sl  := line.new(bar_index, f110u, bar_index+ll, f110u, color=color.new(color.red,  20), width=1)
     label.new(bar_index, high+atr*0.5, "PL SHORT "+tz, style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
-
 if long_sig
-    line.delete(tp1_line)
-    line.delete(tp2_line)
-    line.delete(sl_line)
-    tp1_line := line.new(bar_index, fib_50,   bar_index+ll, fib_50,   color=color.new(color.lime, 20), width=1, style=line.style_dashed)
-    tp2_line := line.new(bar_index, fib_23,   bar_index+ll, fib_23,   color=color.new(color.lime, 0),  width=2, style=line.style_dashed)
-    sl_line  := line.new(bar_index, fib_110d, bar_index+ll, fib_110d, color=color.new(color.red,  20), width=1, style=line.style_dashed)
+    line.delete(tp1)
+    line.delete(tp2)
+    line.delete(sl)
+    tp1 := line.new(bar_index, f50,   bar_index+ll, f50,   color=color.new(color.lime, 20), width=1)
+    tp2 := line.new(bar_index, f236,  bar_index+ll, f236,  color=color.new(color.lime, 0),  width=2)
+    sl  := line.new(bar_index, f110d, bar_index+ll, f110d, color=color.new(color.red,  20), width=1)
     label.new(bar_index, low-atr*0.5, "PL LONG "+tz, style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
-
-alertcondition(short_sig, "PL SHORT", "PL Zone: SHORT signal at 100% fib")
-alertcondition(long_sig,  "PL LONG",  "PL Zone: LONG signal at 100% fib")
+alertcondition(short_sig, "PL SHORT", "PL Zone: SHORT at 100% fib")
+alertcondition(long_sig,  "PL LONG",  "PL Zone: LONG at 100% fib")
