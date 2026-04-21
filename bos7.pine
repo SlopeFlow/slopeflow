@@ -4,7 +4,7 @@ bos_n  = input.int(30,    "BOS Lookback",        group="Setup")
 ml     = input.float(50.0,"Min leg pts",         group="Setup")
 stp    = input.float(30.0,"Stop pts",            group="Risk")
 tp     = input.float(60.0,"TP pts",              group="Risk")
-cd     = input.int(60,    "Cooldown bars",       group="Setup")
+cd     = input.int(45,    "Cooldown bars",       group="Setup")
 use_t  = input.bool(true, "Use 23/29/35 filter", group="Setup")
 ll     = input.int(100,   "Line length",         group="Display")
 bc = close > open
