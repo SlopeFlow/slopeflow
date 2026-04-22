@@ -40,7 +40,15 @@ if bear_bos
     leg_hi := ph[1]
     leg_lo := low
     bos_bar := bar_index
-// leg_hi and leg_lo are locked at BOS confirmation — do not update after
+// Update leg endpoints as price trends — lock resets on new opposing BOS
+if bull_active and not bull_bos
+    if high > leg_hi
+        leg_hi := high
+        bos_bar := bar_index
+if bear_active and not bear_bos
+    if low < leg_lo
+        leg_lo := low
+        bos_bar := bar_index
 lsz = leg_hi - leg_lo
 z40 = leg_lo + lsz * 0.40
 z50 = leg_lo + lsz * 0.50
