@@ -72,10 +72,10 @@ var label hi_lbl = na
 var label lo_lbl = na
 if bull_active and high == leg_hi
     label.delete(hi_lbl)
-    hi_lbl := label.new(bar_index, leg_hi, "●", style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    hi_lbl := label.new(bar_index, leg_hi, tb ? tz : "●", style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
 if bear_active and low == leg_lo
     label.delete(lo_lbl)
-    lo_lbl := label.new(bar_index, leg_lo, "●", style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index, leg_lo, tb ? tz : "●", style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
 plotshape(bull_bos, "Bull BOS", shape.triangleup,   location.belowbar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(bear_bos, "Bear BOS", shape.triangledown,  location.abovebar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
