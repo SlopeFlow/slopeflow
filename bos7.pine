@@ -68,6 +68,8 @@ ls = tb and bull_active and in_l and bc and age_ok and cd_ok and size_ok
 ss = tb and bear_active and in_s and br and age_ok and cd_ok and size_ok
 if ls or ss
     last_sig := bar_index
+plotshape(bull_active and high == leg_hi, "Range Hi", shape.circle, location.abovebar, color=color.new(color.lime, 0), size=size.tiny)
+plotshape(bear_active and low == leg_lo, "Range Lo", shape.circle, location.belowbar, color=color.new(color.red, 0), size=size.tiny)
 plotshape(bull_bos, "Bull BOS", shape.triangleup,   location.belowbar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(bear_bos, "Bear BOS", shape.triangledown,  location.abovebar, color=color.new(color.orange, 30), size=size.tiny)
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
