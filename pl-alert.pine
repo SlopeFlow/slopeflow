@@ -12,7 +12,7 @@ tb  = t23 or t29 or t35
 tz  = t23 ? "23" : t29 ? "29" : "35"
 bc  = close > open
 br  = close < open
-new_sess = ta.change(time("D")) != 0
+new_sess = ta.change(time("1440", "1800-1800:23456")) != 0
 var float sess_hi = na
 var float sess_lo = na
 if new_sess
