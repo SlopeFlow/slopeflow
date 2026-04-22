@@ -1,0 +1,90 @@
+//@version=6
+indicator("BOS Reversal v12 | Newsie", overlay=true, max_bars_back=1000)
+bos_n  = input.int(30,    "BOS Lookback",        group="Setup")
+ml     = input.float(50.0,"Min leg pts",         group="Setup")
+stp    = input.float(30.0,"Stop pts",            group="Risk")
+tp     = input.float(60.0,"TP pts",              group="Risk")
+cd     = input.int(45,    "Cooldown bars",       group="Setup")
+use_t  = input.bool(true, "Use 23/29/35 filter", group="Setup")
+ll     = input.int(100,   "Line length",         group="Display")
+bc = close > open
+br = close < open
+eh = hour(time, "America/New_York")
+em = minute(time, "America/New_York")
+s = eh + em
+d = em - eh
+t23 = ((s>=22 and s<=24) or (d>=22 and d<=24) or (em>=22 and em<=24) or (eh==2 and em>=2 and em<=4))
+t29 = ((s>=28 and s<=30) or (d>=28 and d<=30) or (em>=28 and em<=30) or (eh==2 and em>=8 and em<=9))
+t35 = ((s>=34 and s<=36) or (d>=34 and d<=36) or (em>=34 and em<=36) or (eh==3 and em>=4 and em<=6))
+tb  = not use_t or (t23 or t29 or t35)
+tz  = t23 ? "23" : t29 ? "29" : t35 ? "35" : "??"
+ph = ta.highest(high, bos_n)
+pl = ta.lowest(low,  bos_n)
+bull_bos = bc and close > ph[1]
+bear_bos = br and close < pl[1]
+var bool  bull_active = false
+var bool  bear_active = false
+var float leg_hi = na
+var float leg_lo = na
+var int   bos_bar = -999
+var int   last_sig = -999
+if bull_bos
+    bull_active := true
+    bear_active := false
+    leg_hi := high
+    leg_lo := pl[1]
+    bos_bar := bar_index
+if bear_bos
+    bear_active := true
+    bull_active := false
+    leg_hi := ph[1]
+    leg_lo := low
+    bos_bar := bar_index
+if bull_active and not bull_bos
+    if high > leg_hi
+        leg_hi := high
+        bos_bar := bar_index
+if bear_active and not bear_bos
+    if low < leg_lo
+        leg_lo := low
+        bos_bar := bar_index
+lsz = leg_hi - leg_lo
+z40 = leg_lo + lsz * 0.40
+z60 = leg_lo + lsz * 0.60
+// Endpoint dot — only on BOS confirmation bar
+if bull_bos or bear_bos
+    if bull_bos
+        label.new(bar_index, leg_lo, tb ? tz : "o", style=label.style_label_up,   color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    else
+        label.new(bar_index, leg_hi, tb ? tz : "o", style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+bgcolor(tb and use_t ? color.new(color.purple, 93) : na)
+age_ok  = bar_index - bos_bar > 3
+cd_ok   = bar_index - last_sig > cd
+size_ok = lsz >= ml
+in_l = low  <= z60 and low  >= z40
+in_s = high >= z40 and high <= z60
+ls = tb and bull_active and in_l and bc and age_ok and cd_ok and size_ok
+ss = tb and bear_active and in_s and br and age_ok and cd_ok and size_ok
+if ls or ss
+    last_sig := bar_index
+plotshape(bull_bos, "Bull BOS", shape.triangleup,   location.belowbar, color=color.new(color.orange, 30), size=size.tiny)
+plotshape(bear_bos, "Bear BOS", shape.triangledown,  location.abovebar, color=color.new(color.orange, 30), size=size.tiny)
+plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
+plotshape(ss, "Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
+var line t1 = na
+var line sl = na
+atr = ta.atr(14)
+if ls
+    line.delete(t1)
+    line.delete(sl)
+    t1 := line.new(bar_index, close+tp,  bar_index+ll, close+tp,  color=color.new(color.lime, 0), width=2)
+    sl := line.new(bar_index, close-stp, bar_index+ll, close-stp, color=color.new(color.red, 20), width=1)
+    label.new(bar_index, low-atr*0.5, "L"+tz, style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
+if ss
+    line.delete(t1)
+    line.delete(sl)
+    t1 := line.new(bar_index, close-tp,  bar_index+ll, close-tp,  color=color.new(color.lime, 0), width=2)
+    sl := line.new(bar_index, close+stp, bar_index+ll, close+stp, color=color.new(color.red, 20), width=1)
+    label.new(bar_index, high+atr*0.5, "S"+tz, style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
+alertcondition(ls, "BOS LONG",  "BOS LONG")
+alertcondition(ss, "BOS SHORT", "BOS SHORT")
