@@ -40,10 +40,7 @@ if bear_bos
     leg_hi := ph[1]
     leg_lo := low
     bos_bar := bar_index
-if bull_active and not bull_bos
-    leg_hi := math.max(leg_hi, high)
-if bear_active and not bear_bos
-    leg_lo := math.min(leg_lo, low)
+// leg_hi and leg_lo are locked at BOS confirmation — do not update after
 lsz = leg_hi - leg_lo
 z40 = leg_lo + lsz * 0.40
 z50 = leg_lo + lsz * 0.50
