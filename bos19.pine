@@ -1,7 +1,7 @@
 //@version=6
 indicator("BOS Reversal v19 | Newsie", overlay=true, max_bars_back=1000)
 bos_n  = input.int(30,    "BOS Lookback",        group="Setup")
-ml     = input.float(50.0,"Min leg pts",         group="Setup")
+ml     = input.float(70.0,"Min leg pts",         group="Setup")
 stp    = input.float(30.0,"Stop pts",            group="Risk")
 tp     = input.float(60.0,"TP pts",              group="Risk")
 cd     = input.int(45,    "Cooldown bars",       group="Setup")
@@ -63,12 +63,16 @@ if ls or ss
     last_sig := bar_index
 var label hi_lbl = na
 var label lo_lbl = na
-if bull_active and high == leg_hi
+if bull_bos
     label.delete(hi_lbl)
-    hi_lbl := label.new(bar_index, leg_hi, tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
-if bear_active and low == leg_lo
     label.delete(lo_lbl)
-    lo_lbl := label.new(bar_index, leg_lo, tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    hi_lbl := label.new(bar_index, high,  tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index, pl[1], tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+if bear_bos
+    label.delete(hi_lbl)
+    label.delete(lo_lbl)
+    hi_lbl := label.new(bar_index, ph[1], tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index, low,   tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(ss, "Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
 var line t1 = na
