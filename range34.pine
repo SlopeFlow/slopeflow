@@ -87,13 +87,13 @@ in_zone = not na(z40) and high >= z40 and low <= z60
 retest_long  = bull_break and in_zone and tb_ok and in_trade_window
 retest_short = bear_break and in_zone and tb_ok and in_trade_window
 
-plotshape(retest_long,  "Retest Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
-plotshape(retest_short, "Retest Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
+plotshape(retest_long,  "Retest Long",  shape.triangleup,   location.belowbar, color=color.new(color.blue,   0), size=size.normal)
+plotshape(retest_short, "Retest Short", shape.triangledown, location.abovebar, color=color.new(color.orange, 0), size=size.normal)
 
 if retest_long
-    label.new(bar_index, low-atr*0.5, use_tb ? tz : "R", style=label.style_label_up,   color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
+    label.new(bar_index, low-atr*0.5, use_tb ? tz : "R", style=label.style_label_up,   color=color.new(color.blue,   5), textcolor=color.white, size=size.small)
 if retest_short
-    label.new(bar_index, high+atr*0.5, use_tb ? tz : "R", style=label.style_label_down, color=color.new(color.red,  5), textcolor=color.white, size=size.small)
+    label.new(bar_index, high+atr*0.5, use_tb ? tz : "R", style=label.style_label_down, color=color.new(color.orange, 5), textcolor=color.white, size=size.small)
 
 alertcondition(retest_long,  "3-4 Retest Long",  "3-4 Range: Retest Long")
 alertcondition(retest_short, "3-4 Retest Short", "3-4 Range: Retest Short")
