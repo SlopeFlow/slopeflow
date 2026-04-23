@@ -1,0 +1,103 @@
+//@version=6
+indicator("3-4 Range Backtest | Newsie", overlay=true, max_bars_back=1000)
+
+// Inputs
+box_color  = input.color(color.new(color.blue, 85), "Range box color", group="Display")
+box_border = input.color(color.new(color.blue, 20), "Box border color", group="Display")
+ll         = input.int(100, "Line length", group="Display")
+
+// Time helpers
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+et_mins = et_h * 60 + et_m
+
+// Session params
+asia   = et_mins >= 1080 or et_mins < 240
+sl_pts = asia ? 20.0 : 30.0
+tp_pts = asia ? 40.0 : 60.0
+
+// Windows
+in_range_window  = et_mins >= 900 and et_mins < 960    // 3:00-3:59 ET
+in_trade_window  = et_mins >= 960 and et_mins < 1260   // 4:00-8:59 ET
+is_hourly_close  = et_m == 0
+in_hourly_window = et_mins >= 960 and et_mins < 1260
+
+// Range state
+var float range_hi    = na
+var float range_lo    = na
+var int   range_start = na
+var int   range_end   = na
+var bool  range_set   = false
+var bool  bull_break  = false
+var bool  bear_break  = false
+var box   range_box   = na
+var line  mid_ln      = na
+
+is_3pm_open = et_mins == 900 and et_mins[1] != 900
+if is_3pm_open
+    range_hi    := high
+    range_lo    := low
+    range_start := bar_index
+    range_set   := false
+    bull_break  := false
+    bear_break  := false
+    box.delete(range_box)
+    line.delete(mid_ln)
+
+if in_range_window and not na(range_hi)
+    range_hi := math.max(range_hi, high)
+    range_lo := math.min(range_lo, low)
+
+is_4pm = et_mins == 960 and et_mins[1] != 960
+if is_4pm and not na(range_hi)
+    range_end := bar_index
+    range_set := true
+    range_box := box.new(range_start, range_hi, range_end + 480, range_lo,
+        border_color=box_border, border_width=1, bgcolor=box_color, extend=extend.right)
+    mid = range_lo + (range_hi - range_lo) * 0.5
+    mid_ln := line.new(range_start, mid, range_end + 480, mid,
+        color=box_border, style=line.style_dashed, width=1, extend=extend.right)
+
+atr = ta.atr(14)
+
+// First hourly close outside range
+if range_set and is_hourly_close and in_hourly_window
+    if close > range_hi and not bull_break
+        bull_break := true
+        bear_break := false
+        label.new(bar_index, high + atr * 0.5, "B↑", style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.small)
+    if close < range_lo and not bear_break
+        bear_break := true
+        bull_break := false
+        label.new(bar_index, low - atr * 0.5, "B↓", style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+
+// 40-60 retest zone
+rng  = not na(range_hi) ? range_hi - range_lo : na
+z40  = not na(rng) ? range_lo + rng * 0.40 : na
+z60  = not na(rng) ? range_lo + rng * 0.60 : na
+in_zone = not na(z40) and high >= z40 and low <= z60
+
+// Retest signals (no time bar gating)
+retest_long  = bull_break and in_zone and in_trade_window
+retest_short = bear_break and in_zone and in_trade_window
+
+plotshape(retest_long,  "Retest Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
+plotshape(retest_short, "Retest Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
+
+var line tp_ln = na
+var line sl_ln = na
+if retest_long
+    line.delete(tp_ln)
+    line.delete(sl_ln)
+    tp_ln := line.new(bar_index, close + tp_pts, bar_index + ll, close + tp_pts, color=color.new(color.lime, 20), width=1)
+    sl_ln := line.new(bar_index, close - sl_pts, bar_index + ll, close - sl_pts, color=color.new(color.red,  20), width=1)
+    label.new(bar_index, low - atr * 0.5, "R", style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
+if retest_short
+    line.delete(tp_ln)
+    line.delete(sl_ln)
+    tp_ln := line.new(bar_index, close - tp_pts, bar_index + ll, close - tp_pts, color=color.new(color.lime, 20), width=1)
+    sl_ln := line.new(bar_index, close + sl_pts, bar_index + ll, close + sl_pts, color=color.new(color.red,  20), width=1)
+    label.new(bar_index, high + atr * 0.5, "R", style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
+
+alertcondition(retest_long,  "3-4 Retest Long",  "3-4 Range: Retest Long")
+alertcondition(retest_short, "3-4 Retest Short", "3-4 Range: Retest Short")
