@@ -69,11 +69,11 @@ if range_set and is_hourly_close and in_hourly_window
     if close > range_hi and not bull_break
         bull_break := true
         bear_break := false
-        label.new(bar_index, high + atr * 0.5, "B↑", style=label.style_label_down, color=color.new(color.lime, 0), textcolor=color.black, size=size.small)
+        label.new(bar_index, high + atr * 0.5, "B↑", style=label.style_label_down, color=color.new(color.blue, 0), textcolor=color.white, size=size.small)
     if close < range_lo and not bear_break
         bear_break := true
         bull_break := false
-        label.new(bar_index, low - atr * 0.5, "B↓", style=label.style_label_up, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
+        label.new(bar_index, low - atr * 0.5, "B↓", style=label.style_label_up, color=color.new(color.orange, 0), textcolor=color.white, size=size.small)
 
 // ── 40-60% retest zone ───────────────────────────────────────────────────────
 rng  = not na(range_hi) ? range_hi - range_lo : na
