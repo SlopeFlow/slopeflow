@@ -57,6 +57,9 @@ if is_10am and not na(range_hi)
                          border_color=box_border, border_width=1,
                          bgcolor=box_color, extend=extend.right)
 
+// ── ATR for label offset ─────────────────────────────────────────────────────
+atr = ta.atr(14)
+
 // ── Hourly close breakout detection (10am-3pm) ───────────────────────────────
 is_hourly_close = em == 0  // top of each hour
 in_hourly_window = et_mins >= 600 and et_mins < 900
@@ -87,7 +90,6 @@ retest_short = bear_break and in_zone and tb_ok and in_trade_window
 plotshape(retest_long,  "Retest Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(retest_short, "Retest Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
 
-atr = ta.atr(14)
 if retest_long
     label.new(bar_index, low-atr*0.5, use_tb ? tz : "R", style=label.style_label_up,   color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
 if retest_short
