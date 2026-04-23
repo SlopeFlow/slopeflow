@@ -1,0 +1,47 @@
+//@version=6
+indicator("BOS Macro | Newsie", overlay=true, max_bars_back=1000)
+bos_n  = input.int(100,   "Macro Lookback",  group="Setup")
+ml     = input.float(150.0,"Min leg pts",    group="Setup")
+bc = close > open
+br = close < open
+ph = ta.highest(high, bos_n)
+pl = ta.lowest(low,  bos_n)
+bull_bos = bc and close > ph[1]
+bear_bos = br and close < pl[1]
+var bool  bull_active = false
+var bool  bear_active = false
+var float leg_hi = na
+var float leg_lo = na
+if bull_bos
+    bull_active := true
+    bear_active := false
+    leg_hi := high
+    leg_lo := pl[1]
+if bear_bos
+    bear_active := true
+    bull_active := false
+    leg_hi := ph[1]
+    leg_lo := low
+if bull_active and not bull_bos
+    if high > leg_hi
+        leg_hi := high
+if bear_active and not bear_bos
+    if low < leg_lo
+        leg_lo := low
+lsz  = leg_hi - leg_lo
+z50  = not na(leg_hi) and not na(leg_lo) ? (leg_hi + leg_lo) / 2 : na
+plot(bull_active or bear_active ? z50 : na, "Macro 50%", color=color.new(color.yellow, 30), linewidth=1, style=plot.style_line)
+lo_off = int(ta.lowestbars(low, bos_n))
+hi_off = int(ta.highestbars(high, bos_n))
+var label hi_lbl = na
+var label lo_lbl = na
+if bull_bos and lsz >= ml
+    label.delete(hi_lbl)
+    label.delete(lo_lbl)
+    hi_lbl := label.new(bar_index,           high,  "H", style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.white, size=size.small)
+    lo_lbl := label.new(bar_index + lo_off,  pl[1], "L", style=label.style_label_up,   color=color.new(color.blue,   0), textcolor=color.white, size=size.small)
+if bear_bos and lsz >= ml
+    label.delete(hi_lbl)
+    label.delete(lo_lbl)
+    hi_lbl := label.new(bar_index + hi_off,  ph[1], "H", style=label.style_label_down, color=color.new(color.orange, 0), textcolor=color.white, size=size.small)
+    lo_lbl := label.new(bar_index,           low,   "L", style=label.style_label_up,   color=color.new(color.blue,   0), textcolor=color.white, size=size.small)
