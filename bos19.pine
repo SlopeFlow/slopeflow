@@ -61,8 +61,8 @@ ls = tb and bull_active and in_l and bc and age_ok and cd_ok and size_ok
 ss = tb and bear_active and in_s and br and age_ok and cd_ok and size_ok
 if ls or ss
     last_sig := bar_index
-lo_off = int(ta.lowestbars(low, bos_n))
-hi_off = int(ta.highestbars(high, bos_n))
+lo_off = int(ta.lowestbars(low, 500))
+hi_off = int(ta.highestbars(high, 500))
 var label hi_lbl = na
 var label lo_lbl = na
 if bull_bos
