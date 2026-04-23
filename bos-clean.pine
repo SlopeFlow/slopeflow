@@ -88,17 +88,13 @@ if bull_bos or bear_bos
         label.delete(lbl)
     array.clear(ep_lbls)
     if bull_bos
-        _hi_off = int(ta.highestbars(high, bos_n))
-        _tz_hi  = t23[math.abs(_hi_off)] ? "23" : t29[math.abs(_hi_off)] ? "29" : t35[math.abs(_hi_off)] ? "35" : "o"
-        array.push(ep_lbls, label.new(bar_index + _hi_off,  leg_hi,              _tz_hi, style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
+        array.push(ep_lbls, label.new(bar_index, high,  tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
         if not na(last_bear_bos_idx)
-            array.push(ep_lbls, label.new(last_bear_bos_idx, last_bear_bos_price, "o",    style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+            array.push(ep_lbls, label.new(last_bear_bos_idx, last_bear_bos_price, "o", style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
     if bear_bos
-        _lo_off = int(ta.lowestbars(low, bos_n))
-        _tz_lo  = t23[math.abs(_lo_off)] ? "23" : t29[math.abs(_lo_off)] ? "29" : t35[math.abs(_lo_off)] ? "35" : "o"
         if not na(last_bull_bos_idx)
-            array.push(ep_lbls, label.new(last_bull_bos_idx, last_bull_bos_price, "o",    style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
-        array.push(ep_lbls, label.new(bar_index + _lo_off,  leg_lo,              _tz_lo, style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+            array.push(ep_lbls, label.new(last_bull_bos_idx, last_bull_bos_price, "o", style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny))
+        array.push(ep_lbls, label.new(bar_index, low, tb ? tz : "o", style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
 
 // ── Signal shapes ─────────────────────────────────────────────────────────────
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
