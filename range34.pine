@@ -22,7 +22,7 @@ tz  = t23 ? "23" : t29 ? "29" : t35 ? "35" : ""
 
 // ── 3-4pm range tracking ─────────────────────────────────────────────────────
 in_range_window = et_mins >= 900 and et_mins < 960   // 3:00-3:59 ET
-in_trade_window = et_mins >= 960 and et_mins < 1260  // 4:00-8:59 ET
+in_trade_window = et_mins >= 960 or et_mins < 540   // 4:00pm-8:59am ET
 
 var float range_hi    = na
 var float range_lo    = na
@@ -61,9 +61,9 @@ if is_4pm and not na(range_hi)
 // ── ATR ──────────────────────────────────────────────────────────────────────
 atr = ta.atr(14)
 
-// ── Hourly close breakout detection (4pm-9pm) ───────────────────────────────
+// ── Hourly close breakout detection (4pm-9am) ───────────────────────────────
 is_hourly_close  = em == 0
-in_hourly_window = et_mins >= 960 and et_mins < 1260
+in_hourly_window = et_mins >= 960 or et_mins < 540
 
 if range_set and is_hourly_close and in_hourly_window
     if close > range_hi and not bull_break
