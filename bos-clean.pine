@@ -75,12 +75,10 @@ if bull_bos or bear_bos
     for lbl in ep_lbls
         label.delete(lbl)
     array.clear(ep_lbls)
-    _hi_off = int(ta.highestbars(high, bos_n))
-    _lo_off  = int(ta.lowestbars(low,  bos_n))
-    _tz_hi = t23[math.abs(_hi_off)] ? "23" : t29[math.abs(_hi_off)] ? "29" : t35[math.abs(_hi_off)] ? "35" : "o"
-    _tz_lo = t23[math.abs(_lo_off)] ? "23" : t29[math.abs(_lo_off)] ? "29" : t35[math.abs(_lo_off)] ? "35" : "o"
-    array.push(ep_lbls, label.new(bar_index + _hi_off, leg_hi, _tz_hi, style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
-    array.push(ep_lbls, label.new(bar_index + _lo_off, leg_lo, _tz_lo, style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    _tz_hi = t23[int(ta.highestbars(high, bos_n)) * -1] ? "23" : t29[int(ta.highestbars(high, bos_n)) * -1] ? "29" : t35[int(ta.highestbars(high, bos_n)) * -1] ? "35" : "o"
+    _tz_lo = t23[int(ta.lowestbars(low,  bos_n)) * -1] ? "23" : t29[int(ta.lowestbars(low,  bos_n)) * -1] ? "29" : t35[int(ta.lowestbars(low,  bos_n)) * -1] ? "35" : "o"
+    array.push(ep_lbls, label.new(bar_index, leg_hi, _tz_hi, style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
+    array.push(ep_lbls, label.new(bar_index, leg_lo, _tz_lo, style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
 
 // ── Signal shapes ─────────────────────────────────────────────────────────────
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
