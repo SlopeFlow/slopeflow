@@ -1,6 +1,6 @@
 //@version=6
 indicator("BOS Reversal v26 | Newsie", overlay=true, max_bars_back=1000)
-bos_n  = input.int(30,    "BOS Lookback",        group="Setup")
+bos_n  = input.int(60,    "BOS Lookback",        group="Setup")
 ml     = input.float(70.0,"Min leg pts",         group="Setup")
 stp    = input.float(30.0,"Stop pts",            group="Risk")
 tp     = input.float(60.0,"TP pts",              group="Risk")

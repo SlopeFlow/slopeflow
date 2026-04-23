@@ -30,7 +30,7 @@ if bear_active and not bear_bos
         leg_lo := low
 lsz  = leg_hi - leg_lo
 z50  = not na(leg_hi) and not na(leg_lo) ? (leg_hi + leg_lo) / 2 : na
-plot(bull_active or bear_active ? z50 : na, "Macro 50%", color=color.new(color.yellow, 30), linewidth=1, style=plot.style_line)
+// 50% line removed — manual drawing preferred
 eh = hour(time, "America/New_York")
 em = minute(time, "America/New_York")
 s = eh + em
