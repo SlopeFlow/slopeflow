@@ -1,0 +1,121 @@
+//@version=6
+indicator("BOS Reversal v2 | Newsie", overlay=true, max_bars_back=500)
+
+// ── Inputs ──────────────────────────────────────────────────────────────────
+bos_n = input.int(30,   "BOS Lookback",   group="Setup")
+cd    = input.int(45,   "Cooldown bars",  group="Setup")
+ll    = input.int(100,  "Line length",    group="Display")
+
+// ── Time bar detection ───────────────────────────────────────────────────────
+eh = hour(time, "America/New_York")
+em = minute(time, "America/New_York")
+s  = eh + em
+d  = em - eh
+t23 = (s>=22 and s<=24) or (d>=22 and d<=24) or (em>=22 and em<=24) or (eh==2 and em>=2 and em<=4)
+t29 = (s>=28 and s<=30) or (d>=28 and d<=30) or (em>=28 and em<=30) or (eh==2 and em>=8 and em<=9)
+t35 = (s>=34 and s<=36) or (d>=34 and d<=36) or (em>=34 and em<=36) or (eh==3 and em>=4 and em<=6)
+tb  = t23 or t29 or t35
+tz  = t23 ? "23" : t29 ? "29" : t35 ? "35" : ""
+
+// ── Blackout windows (ET) ────────────────────────────────────────────────────
+et_mins = eh * 60 + em
+blackout = (et_mins >= 570 and et_mins < 600) or (et_mins >= 990 and et_mins < 1080)
+
+// ── Session SL/TP ────────────────────────────────────────────────────────────
+asia    = et_mins >= 1080 or et_mins < 240   // 18:00-03:59
+london  = et_mins >= 240  and et_mins < 570  // 04:00-09:29
+sl_pts  = asia ? 20.0 : 30.0
+tp_pts  = asia ? 40.0 : 60.0
+
+// ── BOS Detection ────────────────────────────────────────────────────────────
+ph = ta.highest(high, bos_n)
+pl = ta.lowest(low,   bos_n)
+bull_bos = close > ph[1] and close > open
+bear_bos = close < pl[1] and close < open
+
+// ── Leg tracking ─────────────────────────────────────────────────────────────
+var bool  bull_active = false
+var bool  bear_active = false
+var float leg_hi      = na
+var float leg_lo      = na
+
+if bull_bos
+    bull_active := true
+    bear_active := false
+    leg_hi      := high
+    leg_lo      := pl[1]
+if bear_bos
+    bear_active := true
+    bull_active := false
+    leg_hi      := ph[1]
+    leg_lo      := low
+if bull_active and not bull_bos and high > leg_hi
+    leg_hi := high
+if bear_active and not bear_bos and low < leg_lo
+    leg_lo := low
+
+// ── 40-60% Zone ──────────────────────────────────────────────────────────────
+lsz = leg_hi - leg_lo
+z40 = leg_lo + lsz * 0.40
+z60 = leg_lo + lsz * 0.60
+
+// ── Signal conditions ─────────────────────────────────────────────────────────
+var int last_sig = -999
+cd_ok  = bar_index - last_sig > cd
+in_l   = low  <= z60 and low  >= z40
+in_s   = high >= z40 and high <= z60
+ls = tb and bull_active and in_l and cd_ok and not blackout
+ss = tb and bear_active and in_s and cd_ok and not blackout
+if ls or ss
+    last_sig := bar_index
+
+// ── Track opposing BOS positions for endpoint dots ─────────────────────────
+var int   last_bear_bos_idx   = na
+var float last_bear_bos_price = na
+var int   last_bull_bos_idx   = na
+var float last_bull_bos_price = na
+if bull_bos
+    last_bull_bos_idx   := bar_index
+    last_bull_bos_price := high
+if bear_bos
+    last_bear_bos_idx   := bar_index
+    last_bear_bos_price := low
+
+// ── Endpoint dots ─────────────────────────────────────────────────────────────
+var label hi_lbl = na
+var label lo_lbl = na
+if bull_bos
+    label.delete(hi_lbl)
+    label.delete(lo_lbl)
+    hi_lbl := label.new(bar_index, high,  tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index, pl[1], "o",           style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+if bear_bos
+    label.delete(hi_lbl)
+    label.delete(lo_lbl)
+    hi_lbl := label.new(bar_index, ph[1], "o",           style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index, low,   tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+
+// ── Signal shapes ─────────────────────────────────────────────────────────────
+plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
+plotshape(ss, "Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
+
+// ── Signal labels + TP/SL ────────────────────────────────────────────────────
+var line tp_ln = na
+var line sl_ln = na
+atr = ta.atr(14)
+if ls
+    line.delete(tp_ln)
+    line.delete(sl_ln)
+    tp_ln := line.new(bar_index, close+tp_pts, bar_index+ll, close+tp_pts, color=color.new(color.lime, 20), width=1)
+    sl_ln := line.new(bar_index, close-sl_pts, bar_index+ll, close-sl_pts, color=color.new(color.red,  20), width=1)
+    label.new(bar_index, low-atr*0.5, tz, style=label.style_label_up,   color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
+if ss
+    line.delete(tp_ln)
+    line.delete(sl_ln)
+    tp_ln := line.new(bar_index, close-tp_pts, bar_index+ll, close-tp_pts, color=color.new(color.lime, 20), width=1)
+    sl_ln := line.new(bar_index, close+sl_pts, bar_index+ll, close+sl_pts, color=color.new(color.red,  20), width=1)
+    label.new(bar_index, high+atr*0.5, tz, style=label.style_label_down, color=color.new(color.red,  5), textcolor=color.white, size=size.small)
+
+// ── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(ls, "BOS LONG",  "BOS LONG")
+alertcondition(ss, "BOS SHORT", "BOS SHORT")
