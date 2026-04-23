@@ -66,13 +66,15 @@ var label lo_lbl = na
 if bull_bos
     label.delete(hi_lbl)
     label.delete(lo_lbl)
-    hi_lbl := label.new(bar_index, high,  tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
-    lo_lbl := label.new(bar_index, pl[1], tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    lo_off = int(ta.lowestbars(low, bos_n))
+    hi_lbl := label.new(bar_index,          high,  tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index + lo_off, pl[1], tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
 if bear_bos
     label.delete(hi_lbl)
     label.delete(lo_lbl)
-    hi_lbl := label.new(bar_index, ph[1], tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
-    lo_lbl := label.new(bar_index, low,   tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+    hi_off = int(ta.highestbars(high, bos_n))
+    hi_lbl := label.new(bar_index + hi_off, ph[1], tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny)
+    lo_lbl := label.new(bar_index,          low,   tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(ss, "Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
 var line t1 = na
