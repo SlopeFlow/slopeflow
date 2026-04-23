@@ -28,10 +28,12 @@ var float range_hi   = na
 var float range_lo   = na
 var int   range_start = na
 var int   range_end   = na
-var bool  range_set   = false
-var bool  bull_break  = false
-var bool  bear_break  = false
-var box   range_box   = na
+var bool  range_set      = false
+var bool  bull_break     = false
+var bool  bear_break     = false
+var bool  bull_retested  = false
+var bool  bear_retested  = false
+var box   range_box      = na
 
 // Build range during 9-10am window
 is_9am_open = et_mins == 540 and et_mins[1] != 540
@@ -39,9 +41,11 @@ if is_9am_open
     range_hi    := high
     range_lo    := low
     range_start := bar_index
-    range_set   := false
-    bull_break  := false
-    bear_break  := false
+    range_set      := false
+    bull_break     := false
+    bear_break     := false
+    bull_retested  := false
+    bear_retested  := false
 
 if in_range_window and not na(range_hi)
     range_hi := math.max(range_hi, high)
@@ -88,15 +92,17 @@ z60  = not na(rng) ? range_lo + rng * 0.60 : na
 tb_ok   = not use_tb or tb
 in_zone = not na(z40) and high >= z40 and low <= z60
 
-retest_long  = bull_break and in_zone and tb_ok and in_trade_window
-retest_short = bear_break and in_zone and tb_ok and in_trade_window
+retest_long  = bull_break and not bull_retested and in_zone and tb_ok and in_trade_window
+retest_short = bear_break and not bear_retested and in_zone and tb_ok and in_trade_window
 
 plotshape(retest_long,  "Retest Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
 plotshape(retest_short, "Retest Short", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
 
 if retest_long
+    bull_retested := true
     label.new(bar_index, low-atr*0.5, use_tb ? tz : "R", style=label.style_label_up,   color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
 if retest_short
+    bear_retested := true
     label.new(bar_index, high+atr*0.5, use_tb ? tz : "R", style=label.style_label_down, color=color.new(color.red,  5), textcolor=color.white, size=size.small)
 
 alertcondition(retest_long,  "9-10 Retest Long",  "9-10 Range: Retest Long")
