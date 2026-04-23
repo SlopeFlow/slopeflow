@@ -69,16 +69,32 @@ ss = tb and bear_active and in_s and cd_ok and not blackout
 if ls or ss
     last_sig := bar_index
 
+// ── Track opposing BOS positions for endpoint dots ─────────────────────────
+var int   last_bear_bos_idx   = na
+var float last_bear_bos_price = na
+var int   last_bull_bos_idx   = na
+var float last_bull_bos_price = na
+if bull_bos
+    last_bull_bos_idx   := bar_index
+    last_bull_bos_price := high
+if bear_bos
+    last_bear_bos_idx   := bar_index
+    last_bear_bos_price := low
+
 // ── Endpoint dots ─────────────────────────────────────────────────────────────
 var array<label> ep_lbls = array.new<label>()
 if bull_bos or bear_bos
     for lbl in ep_lbls
         label.delete(lbl)
     array.clear(ep_lbls)
-    _tz_hi = t23[int(ta.highestbars(high, bos_n)) * -1] ? "23" : t29[int(ta.highestbars(high, bos_n)) * -1] ? "29" : t35[int(ta.highestbars(high, bos_n)) * -1] ? "35" : "o"
-    _tz_lo = t23[int(ta.lowestbars(low,  bos_n)) * -1] ? "23" : t29[int(ta.lowestbars(low,  bos_n)) * -1] ? "29" : t35[int(ta.lowestbars(low,  bos_n)) * -1] ? "35" : "o"
-    array.push(ep_lbls, label.new(bar_index, leg_hi, _tz_hi, style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
-    array.push(ep_lbls, label.new(bar_index, leg_lo, _tz_lo, style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    if bull_bos
+        array.push(ep_lbls, label.new(bar_index,           high,                tb ? tz : "o", style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
+        if not na(last_bear_bos_idx)
+            array.push(ep_lbls, label.new(last_bear_bos_idx, last_bear_bos_price, "o",           style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
+    if bear_bos
+        if not na(last_bull_bos_idx)
+            array.push(ep_lbls, label.new(last_bull_bos_idx, last_bull_bos_price, "o",           style=label.style_label_down, color=color.new(color.red,  0), textcolor=color.white, size=size.tiny))
+        array.push(ep_lbls, label.new(bar_index,           low,                 tb ? tz : "o", style=label.style_label_up,   color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny))
 
 // ── Signal shapes ─────────────────────────────────────────────────────────────
 plotshape(ls, "Long",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
