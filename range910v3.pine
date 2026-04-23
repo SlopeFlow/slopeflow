@@ -56,6 +56,10 @@ if is_10am and not na(range_hi)
     range_box := box.new(range_start, range_hi, range_end + 480, range_lo,
                          border_color=box_border, border_width=1,
                          bgcolor=box_color, extend=extend.right)
+    // 50% dashed line inside box
+    line.new(range_start, range_lo + (range_hi - range_lo) * 0.5,
+             range_end + 480, range_lo + (range_hi - range_lo) * 0.5,
+             color=box_border, style=line.style_dashed, width=1, extend=extend.right)
 
 // ── ATR for label offset ─────────────────────────────────────────────────────
 atr = ta.atr(14)
