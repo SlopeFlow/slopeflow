@@ -22,25 +22,29 @@ tz  = t23 ? "23" : t29 ? "29" : t35 ? "35" : ""
 
 // ── 3-4pm range tracking ─────────────────────────────────────────────────────
 in_range_window = et_mins >= 900 and et_mins < 960   // 3:00-3:59 ET
-in_trade_window = et_mins >= 960 or et_mins < 540   // 4:00pm-8:59am ET
+in_trade_window = et_mins >= 960 or et_mins < 360   // 4:00pm-5:59am ET
 
 var float range_hi    = na
 var float range_lo    = na
 var int   range_start = na
 var int   range_end   = na
-var bool  range_set   = false
-var bool  bull_break  = false
-var bool  bear_break  = false
-var box   range_box   = na
+var bool  range_set      = false
+var bool  bull_break     = false
+var bool  bear_break     = false
+var bool  bull_retested  = false
+var bool  bear_retested  = false
+var box   range_box      = na
 
 is_3pm_open = et_mins == 900 and et_mins[1] != 900
 if is_3pm_open
     range_hi    := high
     range_lo    := low
     range_start := bar_index
-    range_set   := false
-    bull_break  := false
-    bear_break  := false
+    range_set      := false
+    bull_break     := false
+    bear_break     := false
+    bull_retested  := false
+    bear_retested  := false
 
 if in_range_window and not na(range_hi)
     range_hi := math.max(range_hi, high)
@@ -84,15 +88,17 @@ z60  = not na(rng) ? range_lo + rng * 0.60 : na
 tb_ok   = not use_tb or tb
 in_zone = not na(z40) and high >= z40 and low <= z60
 
-retest_long  = bull_break and in_zone and tb_ok and in_trade_window
-retest_short = bear_break and in_zone and tb_ok and in_trade_window
+retest_long  = bull_break and not bull_retested and in_zone and tb_ok and in_trade_window
+retest_short = bear_break and not bear_retested and in_zone and tb_ok and in_trade_window
 
 plotshape(retest_long,  "Retest Long",  shape.triangleup,   location.belowbar, color=color.new(color.blue,   0), size=size.normal)
 plotshape(retest_short, "Retest Short", shape.triangledown, location.abovebar, color=color.new(color.orange, 0), size=size.normal)
 
 if retest_long
+    bull_retested := true
     label.new(bar_index, low-atr*0.5, use_tb ? tz : "R", style=label.style_label_up,   color=color.new(color.blue,   5), textcolor=color.white, size=size.small)
 if retest_short
+    bear_retested := true
     label.new(bar_index, high+atr*0.5, use_tb ? tz : "R", style=label.style_label_down, color=color.new(color.orange, 5), textcolor=color.white, size=size.small)
 
 alertcondition(retest_long,  "3-4 Retest Long",  "3-4 Range: Retest Long")
