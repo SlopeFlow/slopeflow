@@ -60,11 +60,9 @@ if (watch_long or watch_short) and bars_left < 0
     watch_long := false
     watch_short := false
 
-// ── Session SL/TP ────────────────────────────────────────────────────────────
-et_mins = eh * 60 + em
-asia   = et_mins >= 1080 or et_mins < 240
-sl_pts = asia ? 20.0 : 30.0
-tp_pts = asia ? 40.0 : 60.0
+// ── Fixed SL/TP ──────────────────────────────────────────────────────────────
+sl_pts = 10.0
+tp_pts = 40.0
 
 // ── Visuals ──────────────────────────────────────────────────────────────────
 plotshape(low_sweep,  "23 Low Sweep",  shape.circle, location.belowbar, color=color.new(color.lime, 0), size=size.tiny)
