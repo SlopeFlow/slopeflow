@@ -1,0 +1,85 @@
+//@version=6
+indicator("29 Sweep Reversal | Newsie", overlay=true, max_bars_back=500)
+
+confirm_bars   = input.int(5,  "Confirmation window", minval=1, maxval=10, group="Setup")
+sweep_lookback = input.int(40, "Sweep lookback", minval=3, maxval=200, group="Setup")
+cd_bars        = input.int(40, "Cooldown bars", minval=1, maxval=200, group="Setup")
+ll             = input.int(100,"Line length", group="Display")
+
+sl_pts = 15.0
+tp_pts = 60.0
+
+eh = hour(time, "America/New_York")
+em = minute(time, "America/New_York")
+s  = eh + em
+d  = em - eh
+t29 = (s>=28 and s<=30) or (d>=28 and d<=30) or (em>=28 and em<=30) or (eh==2 and em>=8 and em<=9)
+
+var bool  watch_long = false
+var bool  watch_short = false
+var float sweep_hi = na
+var float sweep_lo = na
+var int   sweep_bar = na
+var int   bars_left = 0
+
+prior_low  = ta.lowest(low[1], sweep_lookback)
+prior_high = ta.highest(high[1], sweep_lookback)
+low_sweep  = t29 and low < prior_low
+high_sweep = t29 and high > prior_high
+
+var int last_sig = -999
+cd_ok = bar_index - last_sig > cd_bars
+
+if low_sweep and cd_ok
+    watch_long := true
+    watch_short := false
+    sweep_hi := high
+    sweep_lo := low
+    sweep_bar := bar_index
+    bars_left := confirm_bars
+
+if high_sweep and cd_ok
+    watch_short := true
+    watch_long := false
+    sweep_hi := high
+    sweep_lo := low
+    sweep_bar := bar_index
+    bars_left := confirm_bars
+
+if (watch_long or watch_short) and bar_index > sweep_bar
+    bars_left -= 1
+
+long_confirm  = watch_long and bar_index > sweep_bar and bars_left >= 0 and close > sweep_hi
+short_confirm = watch_short and bar_index > sweep_bar and bars_left >= 0 and close < sweep_lo
+
+if (watch_long or watch_short) and bars_left < 0
+    watch_long := false
+    watch_short := false
+
+plotshape(low_sweep,  "29 Low Sweep",  shape.circle, location.belowbar, color=color.new(color.lime, 0), size=size.tiny)
+plotshape(high_sweep, "29 High Sweep", shape.circle, location.abovebar, color=color.new(color.red,  0), size=size.tiny)
+plotshape(long_confirm,  "Long Confirm",  shape.triangleup,   location.belowbar, color=color.new(color.lime, 0), size=size.normal)
+plotshape(short_confirm, "Short Confirm", shape.triangledown, location.abovebar, color=color.new(color.red,  0), size=size.normal)
+
+var line tp_ln = na
+var line sl_ln = na
+atr = ta.atr(14)
+if long_confirm
+    last_sig := bar_index
+    line.delete(tp_ln)
+    line.delete(sl_ln)
+    tp_ln := line.new(bar_index, close + tp_pts, bar_index + ll, close + tp_pts, color=color.new(color.lime, 20), width=1)
+    sl_ln := line.new(bar_index, close - sl_pts, bar_index + ll, close - sl_pts, color=color.new(color.red,  20), width=1)
+    label.new(bar_index, low - atr * 0.5, "29", style=label.style_label_up, color=color.new(color.lime, 5), textcolor=color.black, size=size.small)
+    watch_long := false
+if short_confirm
+    last_sig := bar_index
+    line.delete(tp_ln)
+    line.delete(sl_ln)
+    tp_ln := line.new(bar_index, close - tp_pts, bar_index + ll, close - tp_pts, color=color.new(color.lime, 20), width=1)
+    sl_ln := line.new(bar_index, close + sl_pts, bar_index + ll, close + sl_pts, color=color.new(color.red,  20), width=1)
+    label.new(bar_index, high + atr * 0.5, "29", style=label.style_label_down, color=color.new(color.red, 5), textcolor=color.white, size=size.small)
+    watch_short := false
+
+alertcondition(long_confirm,  "29 Reversal Long",  "29 Sweep Reversal Long")
+alertcondition(short_confirm, "29 Reversal Short", "29 Sweep Reversal Short")
