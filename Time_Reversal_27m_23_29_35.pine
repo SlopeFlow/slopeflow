@@ -1,0 +1,99 @@
+//@version=6
+indicator("23/29/35 Time Reversal 27m | Newsie", overlay=true, max_bars_back=500)
+
+// ─── INPUTS ───────────────────────────────────────────────────────────────────
+lookback   = input.int(30,    "BOS Lookback (bars)",  group="Structure")
+cooldown   = input.int(45,    "Cooldown (bars)",       group="Structure")
+show_zones = input.bool(true, "Highlight time bars",   group="Display")
+
+// Per-bar TP/SL (pts) — 27m specific params
+sl_23 = input.float(20.0, "SL — 23 bar (pts)", group="Risk per Bar")
+tp_23 = input.float(50.0, "TP — 23 bar (pts)", group="Risk per Bar")
+sl_29 = input.float(30.0, "SL — 29 bar (pts)", group="Risk per Bar")
+tp_29 = input.float(80.0, "TP — 29 bar (pts)", group="Risk per Bar")
+sl_35 = input.float(30.0, "SL — 35 bar (pts)", group="Risk per Bar")
+tp_35 = input.float(120.0,"TP — 35 bar (pts)", group="Risk per Bar")
+
+// ─── TIME (ET) ────────────────────────────────────────────────────────────────
+et_hour = hour(time, "America/New_York")
+et_min  = minute(time, "America/New_York")
+
+h_plus_m = et_hour + et_min
+min_only  = et_min
+
+in_23 = (h_plus_m >= 22 and h_plus_m <= 24) or (min_only >= 22 and min_only <= 24)
+in_29 = (h_plus_m >= 28 and h_plus_m <= 30) or (min_only >= 28 and min_only <= 30)
+in_35 = (h_plus_m >= 34 and h_plus_m <= 36) or (min_only >= 34 and min_only <= 36)
+
+is_time_bar = in_23 or in_29 or in_35
+
+time_zone = in_23 ? "23" : in_29 ? "29" : in_35 ? "35" : ""
+
+// Active TP/SL for this bar
+active_sl = in_23 ? sl_23 : in_29 ? sl_29 : sl_35
+active_tp = in_23 ? tp_23 : in_29 ? tp_29 : tp_35
+
+// ─── COOLDOWN TRACKER ────────────────────────────────────────────────────────
+var int last_signal_bar = -999
+bars_since_signal = bar_index - last_signal_bar
+cooldown_ok = bars_since_signal >= cooldown
+
+// ─── REVERSAL SIGNALS ────────────────────────────────────────────────────────
+bear_rev = is_time_bar and close < open and cooldown_ok
+bull_rev = is_time_bar and close > open and cooldown_ok
+
+if bull_rev or bear_rev
+    last_signal_bar := bar_index
+
+// ─── DISPLAY ──────────────────────────────────────────────────────────────────
+bgcolor(show_zones and is_time_bar ? color.new(color.purple, 90) : na, title="Time Bar Zone")
+
+plotshape(bull_rev, "Bull Reversal", shape.triangleup,  location.belowbar,
+          color=color.new(color.lime, 0), size=size.small)
+plotshape(bear_rev, "Bear Reversal", shape.triangledown, location.abovebar,
+          color=color.new(color.red,  0), size=size.small)
+
+// Labels
+if bull_rev
+    label.new(bar_index, low - ta.atr(14) * 0.4,
+              "L" + time_zone,
+              style=label.style_label_up,
+              color=color.new(color.lime, 10),
+              textcolor=color.black,
+              size=size.tiny)
+
+if bear_rev
+    label.new(bar_index, high + ta.atr(14) * 0.4,
+              "S" + time_zone,
+              style=label.style_label_down,
+              color=color.new(color.red, 10),
+              textcolor=color.white,
+              size=size.tiny)
+
+// TP / SL lines
+var line tp_line = na
+var line sl_line = na
+
+if bull_rev
+    line.delete(tp_line)
+    line.delete(sl_line)
+    tp_line := line.new(bar_index, close + active_tp, bar_index + 20, close + active_tp,
+                        color=color.new(color.lime, 20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close - active_sl, bar_index + 20, close - active_sl,
+                        color=color.new(color.red,  20), width=1, style=line.style_dashed)
+
+if bear_rev
+    line.delete(tp_line)
+    line.delete(sl_line)
+    tp_line := line.new(bar_index, close - active_tp, bar_index + 20, close - active_tp,
+                        color=color.new(color.lime, 20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close + active_sl, bar_index + 20, close + active_sl,
+                        color=color.new(color.red,  20), width=1, style=line.style_dashed)
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────────
+alertcondition(bull_rev and in_23, "27m L23", "27m Time Reversal: LONG 23 | TP=50 SL=20")
+alertcondition(bear_rev and in_23, "27m S23", "27m Time Reversal: SHORT 23 | TP=50 SL=20")
+alertcondition(bull_rev and in_29, "27m L29", "27m Time Reversal: LONG 29 | TP=80 SL=30")
+alertcondition(bear_rev and in_29, "27m S29", "27m Time Reversal: SHORT 29 | TP=80 SL=30")
+alertcondition(bull_rev and in_35, "27m L35", "27m Time Reversal: LONG 35 | TP=120 SL=30")
+alertcondition(bear_rev and in_35, "27m S35", "27m Time Reversal: SHORT 35 | TP=120 SL=30")
