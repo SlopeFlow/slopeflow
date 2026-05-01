@@ -1,0 +1,168 @@
+//@version=6
+indicator("23/29/35 Time Reversal 27m v4 | Newsie", overlay=true, max_bars_back=500)
+
+// ─── INPUTS ───────────────────────────────────────────────────────────────────
+pivot_left   = input.int(5,    "Pivot Left Bars",            group="Structure")
+pivot_right  = input.int(5,    "Pivot Right Bars",           group="Structure")
+confirm_bars = input.int(2,    "Confirmation Window (bars)", group="Structure")
+cooldown     = input.int(6,    "Cooldown (bars)",            group="Structure")
+show_zones   = input.bool(true,"Highlight time bars",        group="Display")
+
+sl_23 = input.float(20.0,  "SL — 23 bar (pts)", group="Risk per Bar")
+tp_23 = input.float(50.0,  "TP — 23 bar (pts)", group="Risk per Bar")
+sl_29 = input.float(30.0,  "SL — 29 bar (pts)", group="Risk per Bar")
+tp_29 = input.float(80.0,  "TP — 29 bar (pts)", group="Risk per Bar")
+sl_35 = input.float(30.0,  "SL — 35 bar (pts)", group="Risk per Bar")
+tp_35 = input.float(120.0, "TP — 35 bar (pts)", group="Risk per Bar")
+
+// ─── TIME (ET) ────────────────────────────────────────────────────────────────
+et_hour  = hour(time, "America/New_York")
+et_min   = minute(time, "America/New_York")
+h_plus_m = et_hour + et_min
+min_only = et_min
+
+in_23 = (h_plus_m >= 22 and h_plus_m <= 24) or (min_only >= 22 and min_only <= 24)
+in_29 = (h_plus_m >= 28 and h_plus_m <= 30) or (min_only >= 28 and min_only <= 30)
+in_35 = (h_plus_m >= 34 and h_plus_m <= 36) or (min_only >= 34 and min_only <= 36)
+
+is_time_bar = in_23 or in_29 or in_35
+time_zone   = in_23 ? "23" : in_29 ? "29" : in_35 ? "35" : ""
+
+// ─── PIVOT DETECTION ─────────────────────────────────────────────────────────
+ph = ta.pivothigh(high, pivot_left, pivot_right)
+pl = ta.pivotlow(low,   pivot_left, pivot_right)
+
+// Store pivots with their bar index — reset after sweep
+var float active_ph     = na
+var int   active_ph_bar = -999
+var float active_pl     = na
+var int   active_pl_bar = -999
+
+// New pivot confirmed — store it (pivot_right bars ago)
+if not na(ph)
+    active_ph     := ph
+    active_ph_bar := bar_index - pivot_right
+
+if not na(pl)
+    active_pl     := pl
+    active_pl_bar := bar_index - pivot_right
+
+// ─── COOLDOWN ────────────────────────────────────────────────────────────────
+var int last_signal_bar = -999
+cooldown_ok = (bar_index - last_signal_bar) >= cooldown
+
+// ─── TIME BAR SWEEP CHECK ─────────────────────────────────────────────────────
+// Must be a time bar AND wick sweeps an active (unswept) pivot
+swept_ph = is_time_bar and not na(active_ph) and high >= active_ph and cooldown_ok
+swept_pl = is_time_bar and not na(active_pl) and low  <= active_pl and cooldown_ok
+
+// ─── STORE SETUP & CLEAR SWEPT PIVOT ─────────────────────────────────────────
+var float  tb_high = na
+var float  tb_low  = na
+var int    tb_bar  = -999
+var bool   tb_bear = false
+var bool   tb_bull = false
+var string tb_zone = ""
+var float  tb_sl   = na
+var float  tb_tp   = na
+
+if swept_ph
+    tb_high  := high
+    tb_low   := low
+    tb_bar   := bar_index
+    tb_bear  := true
+    tb_bull  := false
+    tb_zone  := time_zone
+    tb_sl    := in_23 ? sl_23 : in_29 ? sl_29 : sl_35
+    tb_tp    := in_23 ? tp_23 : in_29 ? tp_29 : tp_35
+    active_ph := na   // ← clear pivot so it can't be swept again
+    active_ph_bar := -999
+
+if swept_pl and not swept_ph
+    tb_high  := high
+    tb_low   := low
+    tb_bar   := bar_index
+    tb_bear  := false
+    tb_bull  := true
+    tb_zone  := time_zone
+    tb_sl    := in_23 ? sl_23 : in_29 ? sl_29 : sl_35
+    tb_tp    := in_23 ? tp_23 : in_29 ? tp_29 : tp_35
+    active_pl := na   // ← clear pivot so it can't be swept again
+    active_pl_bar := -999
+
+// ─── CONFIRMATION ────────────────────────────────────────────────────────────
+bars_since_tb = bar_index - tb_bar
+in_window     = bars_since_tb >= 1 and bars_since_tb <= confirm_bars
+
+short_confirm = in_window and tb_bear and not na(tb_low)  and close < tb_low  and cooldown_ok
+long_confirm  = in_window and tb_bull and not na(tb_high) and close > tb_high and cooldown_ok
+
+if short_confirm or long_confirm
+    last_signal_bar := bar_index
+    tb_bar          := -999   // reset setup window
+
+// ─── DISPLAY ─────────────────────────────────────────────────────────────────
+bgcolor(show_zones and is_time_bar ? color.new(color.purple, 90) : na, title="Time Bar Zone")
+
+// Confirmed pivot markers
+plotshape(not na(ph), "Pivot High", shape.diamond, location.abovebar,
+          color=color.new(color.orange, 40), size=size.tiny)
+plotshape(not na(pl), "Pivot Low",  shape.diamond, location.belowbar,
+          color=color.new(color.aqua,   40), size=size.tiny)
+
+// Sweep candle markers (time bar swept a pivot)
+plotshape(swept_ph, "Swept Pivot High", shape.circle, location.abovebar,
+          color=color.new(color.orange, 0), size=size.tiny)
+plotshape(swept_pl and not swept_ph, "Swept Pivot Low", shape.circle, location.belowbar,
+          color=color.new(color.aqua, 0), size=size.tiny)
+
+// Entry signals
+plotshape(short_confirm, "Short Entry", shape.triangledown, location.abovebar,
+          color=color.new(color.red,  0), size=size.small)
+plotshape(long_confirm,  "Long Entry",  shape.triangleup,   location.belowbar,
+          color=color.new(color.lime, 0), size=size.small)
+
+// Entry labels — zone from sweep candle, not confirmation candle
+if short_confirm
+    label.new(bar_index, high + ta.atr(14) * 0.4,
+              "S" + tb_zone,
+              style=label.style_label_down,
+              color=color.new(color.red, 10),
+              textcolor=color.white,
+              size=size.tiny)
+
+if long_confirm
+    label.new(bar_index, low - ta.atr(14) * 0.4,
+              "L" + tb_zone,
+              style=label.style_label_up,
+              color=color.new(color.lime, 10),
+              textcolor=color.black,
+              size=size.tiny)
+
+// TP / SL lines from entry close
+var line tp_line = na
+var line sl_line = na
+
+if long_confirm
+    line.delete(tp_line)
+    line.delete(sl_line)
+    tp_line := line.new(bar_index, close + tb_tp, bar_index + 20, close + tb_tp,
+                        color=color.new(color.lime, 20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close - tb_sl, bar_index + 20, close - tb_sl,
+                        color=color.new(color.red,  20), width=1, style=line.style_dashed)
+
+if short_confirm
+    line.delete(tp_line)
+    line.delete(sl_line)
+    tp_line := line.new(bar_index, close - tb_tp, bar_index + 20, close - tb_tp,
+                        color=color.new(color.lime, 20), width=1, style=line.style_dashed)
+    sl_line := line.new(bar_index, close + tb_sl, bar_index + 20, close + tb_sl,
+                        color=color.new(color.red,  20), width=1, style=line.style_dashed)
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────────
+alertcondition(long_confirm  and tb_zone == "23", "27m L23", "27m Time Reversal: LONG 23 | TP=50 SL=20")
+alertcondition(long_confirm  and tb_zone == "29", "27m L29", "27m Time Reversal: LONG 29 | TP=80 SL=30")
+alertcondition(long_confirm  and tb_zone == "35", "27m L35", "27m Time Reversal: LONG 35 | TP=120 SL=30")
+alertcondition(short_confirm and tb_zone == "23", "27m S23", "27m Time Reversal: SHORT 23 | TP=50 SL=20")
+alertcondition(short_confirm and tb_zone == "29", "27m S29", "27m Time Reversal: SHORT 29 | TP=80 SL=30")
+alertcondition(short_confirm and tb_zone == "35", "27m S35", "27m Time Reversal: SHORT 35 | TP=120 SL=30")
