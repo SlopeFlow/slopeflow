@@ -133,5 +133,9 @@ if short_confirm
                         color=color.new(color.red,  20), width=1, style=line.style_dashed)
 
 // ─── ALERTS ───────────────────────────────────────────────────────────────────
-alertcondition(long_confirm,  "27m LONG",  "27m Time Reversal LONG | Zone: " + tb_zone)
-alertcondition(short_confirm, "27m SHORT", "27m Time Reversal SHORT | Zone: " + tb_zone)
+alertcondition(long_confirm  and tb_zone == "23", "27m L23", "27m Time Reversal: LONG 23 | TP=50 SL=20")
+alertcondition(long_confirm  and tb_zone == "29", "27m L29", "27m Time Reversal: LONG 29 | TP=80 SL=30")
+alertcondition(long_confirm  and tb_zone == "35", "27m L35", "27m Time Reversal: LONG 35 | TP=120 SL=30")
+alertcondition(short_confirm and tb_zone == "23", "27m S23", "27m Time Reversal: SHORT 23 | TP=50 SL=20")
+alertcondition(short_confirm and tb_zone == "29", "27m S29", "27m Time Reversal: SHORT 29 | TP=80 SL=30")
+alertcondition(short_confirm and tb_zone == "35", "27m S35", "27m Time Reversal: SHORT 35 | TP=120 SL=30")
